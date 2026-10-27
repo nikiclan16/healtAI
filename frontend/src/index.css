@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cuc-navy: #0c2340;
+  --color-cuc-blue: #005696;
+  --color-cuc-light: #e6f0fa;
+  --color-cuc-green: #008558;
+  --color-cuc-alert: #e63946;
+  --color-cuc-amber: #d97706;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
+}
+
+body {
+  @apply bg-slate-100 text-slate-800 antialiased;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
