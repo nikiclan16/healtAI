@@ -14,8 +14,8 @@ No usa Docker: el backend corre con pm2 y el front es estático servido por ngin
 ## Requisitos del servidor
 
 - nginx y certbot (ya los usan las otras aplicaciones), pm2 (con `pm2 startup` configurado).
-- Python 3 con `venv` (`sudo apt install python3-venv` si falta). La versión probada es la 3.12.
-- PostgreSQL 13 o superior con el paquete `postgresql-contrib` (extensiones `pgcrypto` y `citext`).
+- **Python 3.10 o superior** (probado en 3.12). Ubuntu 20.04 trae 3.8, que no sirve: instale una versión nueva **en paralelo** (no cambia el `python3` del sistema ni afecta a las otras apps), ver más abajo.
+- PostgreSQL 12 o superior con `postgresql-contrib` (extensiones `pgcrypto` y `citext`). Probado en 12 y 16.
 - El DNS de `healtai.jmdatalabs.co` apuntando a la IP del servidor.
 
 ## Primera vez
@@ -28,13 +28,24 @@ git clone https://github.com/nikiclan16/healtAI.git healtai
 cd healtai
 ```
 
-**2. Crear la base de datos** (una sola vez; usa `sudo -u postgres`)
+**2. Instalar Python 3.12 en paralelo** (una sola vez)
+
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.12 python3.12-venv
+python3.12 --version
+```
+
+Si `apt` no encuentra `python3.12` para su versión de Ubuntu, avíseme: hay una alternativa sin `apt` (uv).
+
+**3. Crear la base de datos** (una sola vez; usa `sudo -u postgres`)
 
 ```bash
 DB_PASS='una-contraseña-larga-y-aleatoria' ./deploy/setup-db.sh
 ```
 
-**3. Configuración**
+**4. Configuración**
 
 ```bash
 cp deploy/env.production.example .env.production
@@ -42,7 +53,7 @@ chmod 600 .env.production
 nano .env.production      # DATABASE_URL, SECRET_KEY (openssl rand -hex 32), ADMIN_EMAIL, ADMIN_PASSWORD
 ```
 
-**4. Modelo entrenado** (cuando el equipo lo entregue)
+**5. Modelo entrenado** (cuando el equipo lo entregue)
 
 ```bash
 # desde su PC
@@ -51,15 +62,15 @@ scp model.json usuario@servidor:/home/gestionacademicasoft/apps/backend/healtai/
 
 Sin ese archivo la API arranca, pero `/predecir` y `/evaluaciones` responden 503 y `/api/salud` dice `degradado`. Es a propósito: nunca inventa una predicción.
 
-**5. Levantar el backend**
+**6. Levantar el backend**
 
 ```bash
-./deploy/deploy-backend.sh
+PYTHON=python3.12 ./deploy/deploy-backend.sh
 ```
 
 Crea el entorno virtual, instala dependencias, inicia `healthai-api` en pm2 (`127.0.0.1:8010`) y consulta `/salud`. Si el puerto 8010 estuviera ocupado (`ss -ltnp | grep 8010`), cambie `BACKEND_PORT` en `.env.production` **y** el `proxy_pass` del archivo de nginx.
 
-**6. nginx y HTTPS**
+**7. nginx y HTTPS**
 
 ```bash
 sudo cp deploy/nginx/healtai.jmdatalabs.co.conf /etc/nginx/sites-available/healtai.jmdatalabs.co
@@ -70,7 +81,7 @@ sudo certbot --nginx -d healtai.jmdatalabs.co
 
 El archivo ya limita los intentos de ingreso por IP (10 por minuto, responde 429), admite lotes de hasta 5 MB y cachea los archivos con hash.
 
-**7. Publicar el front** (desde su PC, en la raíz del repo; no hace falta Node en el servidor)
+**8. Publicar el front** (desde su PC, en la raíz del repo; no hace falta Node en el servidor)
 
 ```bash
 SERVER=usuario@IP_DEL_SERVIDOR ./deploy/deploy-frontend.sh
@@ -78,7 +89,7 @@ SERVER=usuario@IP_DEL_SERVIDOR ./deploy/deploy-frontend.sh
 
 Compila con `VITE_API_BASE_URL=https://healtai.jmdatalabs.co/api` y sube `dist/` a `apps/frontend/healtai`. Si prefiere subirlo a mano, ejecute el script sin `SERVER` y copie el contenido de `frontend/dist/`.
 
-**8. Verificar**
+**9. Verificar**
 
 - `https://healtai.jmdatalabs.co/api/salud` → `{"status": ...}` (`ok` solo con el modelo real instalado).
 - `https://healtai.jmdatalabs.co/admin/login` → ingrese con `ADMIN_EMAIL`/`ADMIN_PASSWORD`, **cambie la contraseña** y cree roles y usuarios.
@@ -89,7 +100,7 @@ Compila con `VITE_API_BASE_URL=https://healtai.jmdatalabs.co/api` y sube `dist/`
 ## Actualizar
 
 ```bash
-# backend (en el servidor, desde la raíz del repo)
+# backend (en el servidor, desde la raíz del repo; el venv ya existe, no hace falta PYTHON)
 ./deploy/deploy-backend.sh
 
 # front (desde su PC)

@@ -8,7 +8,7 @@ Guía para llevar la plataforma a un servidor. `docker-compose.yml` es la config
 
 | Necesita | Detalle |
 |---|---|
-| Servidor con Docker y Compose v2 | PostgreSQL y la API corren en contenedores |
+| Servidor con Docker y Compose v2 (solo variante Docker) | PostgreSQL y la API corren en contenedores |
 | Dominio con HTTPS | Un proxy inverso (Nginx, Caddy, Traefik…) con certificado válido. Los datos clínicos nunca deben viajar por HTTP |
 | Artefacto del modelo | `backend/model_artifacts/model.json` entregado por el equipo del modelo (pesos, intercepto y escalador; ver [`backend/model_artifacts/README.md`](backend/model_artifacts/README.md)) |
 | Node 20+ (solo para construir) | El frontend se compila a archivos estáticos |

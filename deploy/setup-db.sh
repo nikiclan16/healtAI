@@ -2,7 +2,9 @@
 # Crea la base de datos de healthAI en un PostgreSQL ya instalado en el servidor y carga el esquema.
 # Ejecutar UNA vez, desde la raíz del repo, con un usuario que pueda usar `sudo -u postgres`:
 #   DB_PASS='una-contraseña-larga' ./deploy/setup-db.sh
-# Requiere PostgreSQL 13+ (extensiones pgcrypto y citext; en Debian/Ubuntu: paquete postgresql-contrib).
+# Requiere PostgreSQL 12+ (probado en 12 y 16) con las extensiones pgcrypto y citext (Debian/Ubuntu: postgresql-contrib).
+# Las extensiones se crean como superusuario (en PostgreSQL 12 solo un superusuario puede); el esquema lo carga el
+# usuario de la aplicación, así que ya queda como propietario de todas las tablas (no hace falta cambiar dueños).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,6 +23,9 @@ fi
 
 psql_admin -v dbuser="$DB_USER" -v dbname="$DB_NAME" -v dbpass="$DB_PASS" <<'SQL'
 CREATE ROLE :"dbuser" LOGIN PASSWORD :'dbpass';
+ALTER ROLE :"dbuser" SET client_encoding TO 'utf8';
+ALTER ROLE :"dbuser" SET default_transaction_isolation TO 'read committed';
+ALTER ROLE :"dbuser" SET timezone TO 'America/Bogota';
 CREATE DATABASE :"dbname" OWNER :"dbuser";
 SQL
 psql_admin -d "$DB_NAME" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS citext;"
