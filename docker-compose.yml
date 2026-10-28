@@ -1,0 +1,30 @@
+# healthAI · entorno de desarrollo
+# Uso:   docker compose up -d db
+# Pendiente de añadir: backend (FastAPI) y frontend.
+name: healthai
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-healthai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env (copie .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-healthai}
+    ports:
+      # Solo accesible desde esta máquina.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Los scripts se ejecutan en orden alfabético solo al crear el volumen.
+      - ./infra/db/init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # SOLO DESARROLLO: sedes y usuarios de demostración. Quitar en entornos con datos reales.
+      - ./infra/db/seed/dev_seed.sql:/docker-entrypoint-initdb.d/02_dev_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

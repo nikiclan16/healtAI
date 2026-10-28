@@ -1,0 +1,17 @@
+# Secretos locales
+.env
+.env.*
+!.env.example
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Python (backend)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
