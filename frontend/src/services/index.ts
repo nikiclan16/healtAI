@@ -9,12 +9,13 @@ import { mockModelService } from './mock/model'
 
 /**
  * Las pantallas solo importan `services`; nunca hacen `fetch` directamente.
- * La autenticación puede ser real (`VITE_AUTH_MODE=http`) aunque el resto siga simulado.
+ * Los servicios simulados solo se enlazan en desarrollo (`import.meta.env.DEV`): en producción
+ * se eliminan del paquete, junto con los usuarios de prueba.
  */
 export const services: Services = {
-  auth: AUTH_MODE === 'http' ? httpAuthService : mockAuthService,
-  model: API_MODE === 'http' ? httpModelService : mockModelService,
-  evaluations: API_MODE === 'http' ? httpEvaluationService : mockEvaluationService,
+  auth: import.meta.env.DEV && AUTH_MODE === 'mock' ? mockAuthService : httpAuthService,
+  model: import.meta.env.DEV && API_MODE === 'mock' ? mockModelService : httpModelService,
+  evaluations: import.meta.env.DEV && API_MODE === 'mock' ? mockEvaluationService : httpEvaluationService,
 }
 
 export * from './interfaces'

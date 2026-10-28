@@ -22,6 +22,8 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 5. Los umbrales clínicos viven en `src/rules/config.ts`, no en componentes. Cambiarlos requiere validación del referente clínico.
 6. Los roles operativos ya no son una lista fija: los crea el administrador y el login los consulta a `GET /auth/cargos` (`Cargo` es `string`). El portal de acceso muestra el selector de **rol operativo** (como el mockup), pero el servidor valida que el usuario lo tenga asignado y decide el perfil RBAC. Nunca confiar en el rol que declara el cliente.
 
+7. **El modo `mock` es solo para desarrollo.** `config/app.ts` lo desactiva en producción (`import.meta.env.DEV`) y `services/index.ts` enlaza los mocks únicamente en desarrollo, de modo que ni los servicios simulados ni los usuarios de prueba entran al paquete desplegado. No volver a exponer el modo demo en producción.
+
 ## Arquitectura
 
 - `src/services/` — **las pantallas nunca usan `fetch`**; importan `services` de `@/services`.

@@ -9,11 +9,22 @@ export const CONVENIO = '112721-224-2025'
 /** Duración de la sesión: un turno de atención. */
 export const SESSION_HOURS = 8
 
-export const API_MODE: 'mock' | 'http' = import.meta.env.VITE_API_MODE === 'http' ? 'http' : 'mock'
-/** Permite usar autenticación real mientras el modelo y las evaluaciones siguen simulados. */
-export const AUTH_MODE: 'mock' | 'http' =
-  import.meta.env.VITE_AUTH_MODE === 'http' ? 'http' : import.meta.env.VITE_AUTH_MODE === 'mock' ? 'mock' : API_MODE
-export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+/**
+ * El modo simulado (`mock`) existe SOLO para desarrollo local. En una compilación de producción
+ * se usa siempre el backend real, aunque alguien defina VITE_API_MODE=mock: nunca se muestran
+ * predicciones ni autenticación simuladas a un usuario real.
+ */
+export const API_MODE: 'mock' | 'http' = import.meta.env.DEV && import.meta.env.VITE_API_MODE !== 'http' ? 'mock' : 'http'
+/** En desarrollo permite usar autenticación real mientras el modelo y las evaluaciones siguen simulados. */
+export const AUTH_MODE: 'mock' | 'http' = !import.meta.env.DEV
+  ? 'http'
+  : import.meta.env.VITE_AUTH_MODE === 'http'
+    ? 'http'
+    : import.meta.env.VITE_AUTH_MODE === 'mock'
+      ? 'mock'
+      : API_MODE
+/** Producción: mismo origen por defecto (la API detrás del mismo dominio) o `VITE_API_BASE_URL`. */
+export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:8000' : '')
 
 /** RF05.3 — debe mostrarse en toda pantalla de reporte. */
 export const DISCLAIMER =

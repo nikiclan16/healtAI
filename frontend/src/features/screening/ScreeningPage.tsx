@@ -163,7 +163,7 @@ export function ScreeningPage() {
             <span><strong>Contrato de Datos incompleto:</strong> {answered} de {total} campos obligatorios completados.</span>
           )}
         </span>
-        {API_MODE === 'mock' && (
+        {import.meta.env.DEV && API_MODE === 'mock' && (
           <button type="button" onClick={loadExample} className="rounded bg-cuc-blue px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700">
             Recargar Valores Anexo E
           </button>

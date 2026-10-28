@@ -181,7 +181,7 @@ export function LoginPage() {
             <span>{isSubmitting ? 'Verificando…' : 'Confirmar Credenciales y Continuar a Tamizaje'}</span>
           </button>
 
-          {AUTH_MODE === 'mock' && (
+          {import.meta.env.DEV && AUTH_MODE === 'mock' && (
             <p className="rounded-lg bg-amber-50 p-3 text-[11px] text-amber-800">
               <strong>Modo demo:</strong> autenticación simulada. Usuarios de prueba y roles permitidos en <code>src/services/mock/users.ts</code>. En producción el servidor valida que el usuario tenga asignado el rol elegido.
             </p>

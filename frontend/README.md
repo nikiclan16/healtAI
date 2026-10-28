@@ -6,7 +6,7 @@ SPA en React + TypeScript + Vite + Tailwind. Estado actual: **estructura inicial
 
 ```bash
 npm install
-cp .env.example .env     # VITE_API_MODE=mock por defecto
+cp .env.example .env     # desarrollo: VITE_API_MODE=mock (datos simulados)
 npm run dev              # http://localhost:5173
 ```
 
@@ -42,6 +42,10 @@ echo "VITE_AUTH_MODE=http" > .env.local   # y VITE_API_BASE_URL si la API no est
 ```
 
 El administrador inicial lo define `ADMIN_EMAIL` / `ADMIN_PASSWORD` en el `.env` de la raíz.
+
+## Producción
+
+`npm run build` genera siempre un paquete **sin modo demo**: ignora `VITE_API_MODE`, no incluye servicios simulados ni usuarios de prueba, y habla solo con el backend real. Defina `VITE_API_BASE_URL` con la URL pública de la API, o déjela vacía si la API se sirve bajo el mismo dominio. Para el modelo y las evaluaciones el backend debe exponer `/predecir` y `/evaluaciones` (pendientes).
 
 ## Conectar el backend real
 

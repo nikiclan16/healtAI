@@ -36,7 +36,7 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {API_MODE === 'mock' && (
+      {import.meta.env.DEV && API_MODE === 'mock' && (
         <div className="no-print bg-amber-400 px-4 py-1 text-center text-xs font-bold text-slate-900">
           MODO DEMO — datos simulados. No ingrese información real de pacientes.
         </div>
