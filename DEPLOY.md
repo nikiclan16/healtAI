@@ -2,6 +2,8 @@
 
 Guía para llevar la plataforma a un servidor. `docker-compose.yml` es la configuración **base y apta para producción**; `docker-compose.override.yml` solo existe para desarrollo (usuarios de demostración y `/docs`) y **no debe usarse** en el servidor.
 
+> **Servidor con nginx + pm2 (healtai.jmdatalabs.co):** siga [`deploy/README.md`](deploy/README.md), con scripts y configuración listos. El resto de este documento describe la variante con Docker Compose y la lista general de verificación.
+
 ## 1. Antes de empezar
 
 | Necesita | Detalle |
