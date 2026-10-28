@@ -24,7 +24,24 @@ Usuarios de prueba (solo demo): ver `src/services/mock/users.ts`. En la pantalla
 | Decisión humana (confirmar / rechazar / ajustar) | Hecho (local) |
 | Exportar PDF | `window.print()` (CSS de impresión básico) |
 | Panel de investigador | Placeholder |
+| **Administración** (`/admin`): login de admin, alta de usuarios y roles | Hecho (requiere el backend) |
 | Adapters `http` | Esqueleto: contrato **provisional** |
+
+## Administración de usuarios y roles
+
+URL: **`/admin/login`** (sesión propia de 60 min, separada del portal clínico). Requiere el backend en marcha (`docker compose up -d --build` en la raíz). Desde ahí el administrador:
+
+- crea **roles operativos** (p. ej. "Trabajo Social") con un perfil base (Evaluador o Investigador);
+- crea **usuarios**, les asigna roles y sedes, y les genera una contraseña inicial que se muestra una sola vez;
+- edita, desactiva/activa y restablece contraseñas.
+
+Para que el portal clínico (`/login`) use esos usuarios y roles reales, active la autenticación real sin tocar el resto del demo:
+
+```bash
+echo "VITE_AUTH_MODE=http" > .env.local   # y VITE_API_BASE_URL si la API no está en http://localhost:8000
+```
+
+El administrador inicial lo define `ADMIN_EMAIL` / `ADMIN_PASSWORD` en el `.env` de la raíz.
 
 ## Conectar el backend real
 

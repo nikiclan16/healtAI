@@ -4,8 +4,9 @@ import type { ModelInput, ScreeningForm } from './contract'
 export type SiteCode = 'BAQ' | 'RHA' | 'VUP'
 /** Perfil de acceso (RBAC) — lo decide el servidor. */
 export type Role = 'evaluador' | 'investigador'
-/** Rol operativo que el usuario declara en el portal de acceso; el servidor lo valida. */
-export type Cargo = 'medico' | 'psicologo' | 'enfermeria' | 'investigador'
+/** Código del rol operativo que el usuario declara en el portal de acceso; el servidor lo valida.
+ *  Los roles los crea el administrador, por eso es un texto libre y no una lista fija. */
+export type Cargo = string
 export type RouteCode = 'A' | 'B'
 export type Confidence = 'Alta' | 'Media' | 'Baja'
 
@@ -16,6 +17,8 @@ export interface UserProfile {
   rol: Role
   /** Rol operativo con el que se ingresó. */
   cargo: Cargo
+  /** Nombre legible del rol operativo. */
+  cargoLabel?: string
 }
 
 export interface Session {

@@ -19,20 +19,45 @@ CREATE TABLE sites (
     nombre  TEXT NOT NULL
 );
 
+INSERT INTO sites (code, ciudad, centro, nombre) VALUES
+    ('BAQ', 'Barranquilla', 'CAP Metropolitano', 'CAP Barranquilla (Sede Norte)'),
+    ('RHA', 'Riohacha',     'CAP Comunitario',   'CAP Riohacha (Sede Guajira)'),
+    ('VUP', 'Valledupar',   'CAP Integral',      'CAP Valledupar (Sede Cesar)');
+
 CREATE TABLE users (
-    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email          CITEXT NOT NULL UNIQUE,
-    password_hash  TEXT NOT NULL,                       -- bcrypt ($2a$/$2b$)
-    nombre         TEXT NOT NULL,
-    rol            TEXT NOT NULL CHECK (rol IN ('evaluador', 'investigador')),  -- perfil RBAC
-    activo         BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email             CITEXT NOT NULL UNIQUE,
+    password_hash     TEXT NOT NULL,                    -- bcrypt ($2a$/$2b$)
+    nombre            TEXT NOT NULL,
+    -- Perfil RBAC. "admin" gestiona usuarios y roles; no opera pacientes.
+    rol               TEXT NOT NULL CHECK (rol IN ('evaluador', 'investigador', 'admin')),
+    activo            BOOLEAN NOT NULL DEFAULT TRUE,
+    failed_logins     INT NOT NULL DEFAULT 0,           -- intentos fallidos consecutivos
+    locked_until      TIMESTAMPTZ,                      -- bloqueo temporal por intentos fallidos
+    last_login_at     TIMESTAMPTZ,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Roles operativos (Médico, Psicólogo…). Los crea el administrador; cada uno hereda un perfil
+-- base que determina sus permisos.
+CREATE TABLE cargos (
+    code        TEXT PRIMARY KEY CHECK (code ~ '^[a-z][a-z0-9_]{2,31}$'),
+    label       TEXT NOT NULL CHECK (length(btrim(label)) BETWEEN 3 AND 60),
+    rol         TEXT NOT NULL CHECK (rol IN ('evaluador', 'investigador')),
+    activo      BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO cargos (code, label, rol) VALUES
+    ('medico',       'Médico de Atención Primaria', 'evaluador'),
+    ('psicologo',    'Psicólogo Clínico',           'evaluador'),
+    ('enfermeria',   'Enfermería Especializada',    'evaluador'),
+    ('investigador', 'Investigador CUC (Auditor)',  'investigador');
 
 -- Roles operativos que el usuario puede declarar en el portal de acceso.
 CREATE TABLE user_cargos (
     user_id  UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    cargo    TEXT NOT NULL CHECK (cargo IN ('medico', 'psicologo', 'enfermeria', 'investigador')),
+    cargo    TEXT NOT NULL REFERENCES cargos (code),
     PRIMARY KEY (user_id, cargo)
 );
 
@@ -43,14 +68,17 @@ CREATE TABLE user_sites (
     PRIMARY KEY (user_id, site_code)
 );
 
--- El cargo "investigador" solo es compatible con el perfil RBAC "investigador" y viceversa.
+-- El perfil base del cargo debe coincidir con el perfil del usuario; el admin no tiene cargos.
 CREATE FUNCTION trg_user_cargo_consistency() RETURNS trigger AS $$
 DECLARE
-    perfil TEXT;
+    perfil_usuario TEXT;
+    perfil_cargo   TEXT;
 BEGIN
-    SELECT rol INTO perfil FROM users WHERE id = NEW.user_id;
-    IF (NEW.cargo = 'investigador') <> (perfil = 'investigador') THEN
-        RAISE EXCEPTION 'El cargo % no es compatible con el perfil %', NEW.cargo, perfil;
+    SELECT rol INTO perfil_usuario FROM users WHERE id = NEW.user_id;
+    SELECT rol INTO perfil_cargo FROM cargos WHERE code = NEW.cargo;
+    IF perfil_usuario IS DISTINCT FROM perfil_cargo THEN
+        RAISE EXCEPTION 'El cargo % (perfil %) no es compatible con el perfil del usuario (%)',
+            NEW.cargo, perfil_cargo, perfil_usuario;
     END IF;
     RETURN NEW;
 END
@@ -87,7 +115,7 @@ CREATE TABLE evaluations (
     codigo_paciente      TEXT NOT NULL UNIQUE DEFAULT next_patient_code(),
     site_code            TEXT NOT NULL REFERENCES sites (code),
     user_id              UUID NOT NULL REFERENCES users (id),
-    cargo                TEXT NOT NULL CHECK (cargo IN ('medico', 'psicologo', 'enfermeria', 'investigador')),
+    cargo                TEXT NOT NULL REFERENCES cargos (code),
 
     formulario           JSONB NOT NULL,   -- respuestas del formulario (ScreeningForm)
     entrada_modelo       JSONB NOT NULL,   -- variables enviadas al clasificador (sin ADA/IWGDF)

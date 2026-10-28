@@ -20,7 +20,7 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 3. La regla de seguridad (`SEG`) fuerza Ruta A y no se puede degradar a B desde la UI (`DecisionPanel`).
 4. Sin datos reales de pacientes. El formulario NO captura ningún identificador: el código seudonimizado (`PAC-AAAA-NNNN`) lo genera el sistema al guardar (en modo `http`, el servidor).
 5. Los umbrales clínicos viven en `src/rules/config.ts`, no en componentes. Cambiarlos requiere validación del referente clínico.
-6. El portal de acceso muestra el selector de **rol operativo** (como el mockup), pero el servidor valida que el usuario lo tenga asignado y decide el perfil RBAC. Nunca confiar en el rol que declara el cliente.
+6. Los roles operativos ya no son una lista fija: los crea el administrador y el login los consulta a `GET /auth/cargos` (`Cargo` es `string`). El portal de acceso muestra el selector de **rol operativo** (como el mockup), pero el servidor valida que el usuario lo tenga asignado y decide el perfil RBAC. Nunca confiar en el rol que declara el cliente.
 
 ## Arquitectura
 
@@ -30,7 +30,7 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
   - **Cuando llegue el contrato real de `POST /predecir`, el único archivo a ajustar es `http/model.ts`** (`toRequestBody`/`RawPredict`/`toPredictResponse`) y, si cambian las variables, `buildModelInput` en `contract.ts`.
 - `src/rules/` — motor R1–R5 + seguridad: funciones puras, sin React ni I/O, con pruebas. Se reemplazará por la API de `motor_reglas.py`.
 - `src/services/contract.ts` — esquema zod = única fuente de validación de rangos.
-- `src/features/<módulo>/` — auth, screening, results, decision, dashboard, investigator.
+- `src/features/<módulo>/` — auth, screening, results, decision, dashboard, investigator, **admin** (URL `/admin`, sin modo mock: siempre usa el backend; sesión y token propios).
 - `src/components/` — Layout, Disclaimer, VersionBadge, ui.
 
 ## Convenciones

@@ -30,7 +30,14 @@ export class ApiValidationError extends ApiError {
   }
 }
 
+export interface CargoOption {
+  code: string
+  label: string
+}
+
 export interface AuthService {
+  /** Roles operativos activos para el selector del portal de acceso. */
+  listCargos(): Promise<CargoOption[]>
   login(credentials: LoginCredentials): Promise<Session>
   logout(): Promise<void>
 }

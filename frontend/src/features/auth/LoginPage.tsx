@@ -1,17 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { API_MODE, CARGOS, SITES } from '@/config/app'
+import { AUTH_MODE, SITES } from '@/config/app'
 import { Icon, btnPrimary } from '@/components/ui'
 import { services } from '@/services'
+import type { CargoOption } from '@/services'
 import { isSessionValid, useAuthStore } from './authStore'
 
 const LoginSchema = z.object({
   usuario: z.string().trim().min(1, 'Ingrese su identificación'),
   password: z.string().min(1, 'Ingrese su contraseña'),
-  cargo: z.enum(['medico', 'psicologo', 'enfermeria', 'investigador'], { error: 'Seleccione su rol operativo' }),
+  cargo: z.string().min(1, 'Seleccione su rol operativo'),
   sede: z.enum(['BAQ', 'RHA', 'VUP'], { error: 'Seleccione la sede' }),
   consentimiento: z.literal(true, { error: 'Debe aceptar la política de tratamiento de datos' }),
 })
@@ -31,6 +32,20 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
+  const [cargos, setCargos] = useState<CargoOption[]>([])
+  const [cargosError, setCargosError] = useState(false)
+
+  // Los roles los administra el servidor: se consultan al abrir el portal.
+  useEffect(() => {
+    let cancelled = false
+    services.auth
+      .listCargos()
+      .then((list) => !cancelled && setCargos(list))
+      .catch(() => !cancelled && setCargosError(true))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const {
     register,
@@ -100,11 +115,12 @@ export function LoginPage() {
               <label htmlFor="cargo" className="mb-1 block font-semibold text-slate-700">Rol Operativo Asignado</label>
               <select id="cargo" defaultValue="" className="w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cuc-blue" {...register('cargo')}>
                 <option value="" disabled>Seleccione su rol…</option>
-                {Object.entries(CARGOS).map(([key, c]) => (
-                  <option key={key} value={key}>{c.label}</option>
+                {cargos.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
                 ))}
               </select>
               <FieldError message={errors.cargo?.message} />
+              {cargosError && <FieldError message="No se pudieron cargar los roles: verifique la conexión con el servidor" />}
             </div>
           </div>
 
@@ -165,7 +181,7 @@ export function LoginPage() {
             <span>{isSubmitting ? 'Verificando…' : 'Confirmar Credenciales y Continuar a Tamizaje'}</span>
           </button>
 
-          {API_MODE === 'mock' && (
+          {AUTH_MODE === 'mock' && (
             <p className="rounded-lg bg-amber-50 p-3 text-[11px] text-amber-800">
               <strong>Modo demo:</strong> autenticación simulada. Usuarios de prueba y roles permitidos en <code>src/services/mock/users.ts</code>. En producción el servidor valida que el usuario tenga asignado el rol elegido.
             </p>

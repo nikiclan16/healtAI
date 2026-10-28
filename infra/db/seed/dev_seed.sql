@@ -1,11 +1,8 @@
 -- healthAI · datos SOLO PARA DESARROLLO.
--- Sedes del estudio y usuarios de demostración (mismos que el modo `mock` del frontend).
+-- Usuarios de demostración (mismos que el modo `mock` del frontend).
+-- Las sedes y los roles base viven en el esquema. El administrador inicial lo crea el backend
+-- al arrancar con ADMIN_EMAIL / ADMIN_PASSWORD (no hay contraseña de admin en este archivo).
 -- NUNCA montar este archivo en un entorno con datos reales.
-
-INSERT INTO sites (code, ciudad, centro, nombre) VALUES
-    ('BAQ', 'Barranquilla', 'CAP Metropolitano', 'CAP Barranquilla (Sede Norte)'),
-    ('RHA', 'Riohacha',     'CAP Comunitario',   'CAP Riohacha (Sede Guajira)'),
-    ('VUP', 'Valledupar',   'CAP Integral',      'CAP Valledupar (Sede Cesar)');
 
 -- Contraseñas con bcrypt generado por pgcrypto; no se guarda ningún hash fijo en el repo.
 INSERT INTO users (email, password_hash, nombre, rol) VALUES

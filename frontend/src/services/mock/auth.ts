@@ -6,6 +6,9 @@ import { MOCK_USERS } from './users'
 export const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 export const mockAuthService: AuthService = {
+  async listCargos() {
+    return Object.entries(CARGOS).map(([code, c]) => ({ code, label: c.label }))
+  },
   async login({ usuario, password, cargo, sede }) {
     await delay(300)
     const found = MOCK_USERS.find(
@@ -22,7 +25,7 @@ export const mockAuthService: AuthService = {
       // Token ficticio: no es un JWT firmado.
       token: `mock.${btoa(JSON.stringify({ sub: found.id, exp: expiresAt }))}`,
       expiresAt,
-      user: { id: found.id, nombre: found.nombre, rol: CARGOS[cargo].rol, cargo },
+      user: { id: found.id, nombre: found.nombre, rol: CARGOS[cargo].rol, cargo, cargoLabel: CARGOS[cargo].label },
       sede,
     }
   },

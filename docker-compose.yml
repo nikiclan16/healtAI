@@ -1,6 +1,7 @@
 # healthAI · entorno de desarrollo
-# Uso:   docker compose up -d db
-# Pendiente de añadir: backend (FastAPI) y frontend.
+# Uso:   docker compose up -d --build        (base de datos + API en http://127.0.0.1:8000)
+# Pruebas del backend: docker compose run --rm --build backend pytest
+# Pendiente de añadir: frontend.
 name: healthai
 
 services:
@@ -25,6 +26,22 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-healthai}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-healthai}
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY en .env (mínimo 32 caracteres)}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174}
+      # Administrador inicial (solo se crea si no existe ningún admin activo).
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
 
 volumes:
   pgdata:

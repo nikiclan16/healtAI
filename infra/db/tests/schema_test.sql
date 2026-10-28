@@ -12,7 +12,7 @@ $$ LANGUAGE plpgsql;
 
 DO $$
 DECLARE
-    uid UUID; e1 UUID; e2 UUID; e3 UUID;
+    uid UUID; aid UUID; e1 UUID; e2 UUID; e3 UUID;
     c1 TEXT; c2 TEXT; ok BOOLEAN; n INT;
     y TEXT := extract(year FROM now())::int::text;
     ev TEXT := $e$INSERT INTO evaluations (site_code, user_id, cargo, formulario, entrada_modelo, prediccion, reglas,
@@ -34,6 +34,15 @@ BEGIN
 
     -- Cargo investigador no compatible con perfil evaluador
     ASSERT pg_temp.fails(format('INSERT INTO user_cargos VALUES (%L, ''investigador'')', uid)), 'cargo/perfil';
+
+    -- Roles creables: un cargo nuevo es válido para su perfil base; el admin no admite cargos
+    SELECT count(*) INTO n FROM cargos; ASSERT n = 4, 'cargos base';
+    INSERT INTO cargos (code, label, rol) VALUES ('trabajo_social', 'Trabajo Social', 'evaluador');
+    INSERT INTO user_cargos VALUES (uid, 'trabajo_social');
+    INSERT INTO users (email, password_hash, nombre, rol) VALUES ('admin@test', 'x', 'Admin', 'admin') RETURNING id INTO aid;
+    ASSERT pg_temp.fails(format('INSERT INTO user_cargos VALUES (%L, ''medico'')', aid)), 'admin sin cargos';
+    ASSERT pg_temp.fails($c$INSERT INTO cargos (code, label, rol) VALUES ('Mal Codigo', 'xyz', 'evaluador')$c$), 'formato de código';
+    ASSERT pg_temp.fails($c$INSERT INTO cargos (code, label, rol) VALUES ('otro_cargo', 'Otro', 'admin')$c$), 'cargo no puede ser admin';
 
     -- Códigos seudonimizados consecutivos
     EXECUTE format(ev, uid, '{"locked": false}', '0.6080', 'A', 'A') INTO e1;

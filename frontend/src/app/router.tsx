@@ -1,5 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
+import { AdminLayout, RequireAdmin } from '@/features/admin/AdminLayout'
+import { AdminLoginPage } from '@/features/admin/AdminLoginPage'
+import { AdminPage } from '@/features/admin/AdminPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth, RequireRole } from '@/features/auth/guards'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
@@ -27,6 +30,15 @@ export const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
+  // Área de administración: URL propia, sesión propia.
+  {
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
+      { path: 'login', element: <AdminLoginPage /> },
+      { element: <RequireAdmin />, children: [{ index: true, element: <AdminPage /> }] },
     ],
   },
 ])

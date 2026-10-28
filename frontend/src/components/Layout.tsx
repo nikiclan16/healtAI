@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { API_MODE, APP_NAME, CARGOS, CONVENIO, MODEL_CARD, SITES } from '@/config/app'
+import { API_MODE, APP_NAME, CONVENIO, MODEL_CARD, SITES } from '@/config/app'
 import { useAuthStore } from '@/features/auth/authStore'
 import { useSessionExpiry } from '@/features/auth/useSessionExpiry'
 import { services } from '@/services'
@@ -64,7 +64,7 @@ export function Layout() {
               </nav>
               <div className="text-right text-xs">
                 <div className="font-semibold">{session.user.nombre}</div>
-                <div className="text-slate-300">{CARGOS[session.user.cargo].label}</div>
+                <div className="text-slate-300">{session.user.cargoLabel ?? session.user.cargo}</div>
               </div>
               <button onClick={logout} className="rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold hover:bg-white/10">
                 Salir

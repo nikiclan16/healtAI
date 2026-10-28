@@ -10,6 +10,9 @@ export const CONVENIO = '112721-224-2025'
 export const SESSION_HOURS = 8
 
 export const API_MODE: 'mock' | 'http' = import.meta.env.VITE_API_MODE === 'http' ? 'http' : 'mock'
+/** Permite usar autenticación real mientras el modelo y las evaluaciones siguen simulados. */
+export const AUTH_MODE: 'mock' | 'http' =
+  import.meta.env.VITE_AUTH_MODE === 'http' ? 'http' : import.meta.env.VITE_AUTH_MODE === 'mock' ? 'mock' : API_MODE
 export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 /** RF05.3 — debe mostrarse en toda pantalla de reporte. */
