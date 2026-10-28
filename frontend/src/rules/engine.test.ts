@@ -5,8 +5,9 @@ import type { RulesInput } from '@/rules'
 
 /** Entrada "sana": ninguna regla se dispara. */
 const healthy = (): RulesInput => ({
-  dassItems: Array.from({ length: 21 }, () => 0),
-  who5Items: [4, 4, 4, 4, 4], // 20/25 = 80 %
+  who5Total: 20, // 80 %
+  dass: { depresion: 0, ansiedad: 0, estres: 0 },
+  item21: 0,
   v13ApoyoFamiliar: 5,
   v14ActividadFisica: 3,
   v15CalidadSueno: 5,
@@ -41,38 +42,35 @@ describe('evaluateRules', () => {
     expect(r.locked).toBe(false)
   })
 
-  it('R1: ítem 21 ≥ 2', () => {
-    const input = healthy()
-    const items = [...input.dassItems]
-    items[20] = 2
-    expect(codes({ ...input, dassItems: items })).toContain('R1')
+  it.each([2, 3])('R1: ítem 21 = %i la dispara y marca alerta suicida', (item21) => {
+    const r = evaluateRules({ ...healthy(), item21 })
+    expect(r.triggered.map((o) => o.code)).toContain('R1')
+    expect(r.suicideAlert).toBe(true)
   })
 
   it('R1: ítem 21 = 1 no la dispara', () => {
-    const items = [...healthy().dassItems]
-    items[20] = 1
-    expect(codes({ ...healthy(), dassItems: items })).not.toContain('R1')
+    expect(codes({ ...healthy(), item21: 1 })).not.toContain('R1')
   })
 
-  it('R1: ítem 21 no evaluable (null) la dispara y marca alerta suicida', () => {
-    const items = [...healthy().dassItems]
-    items[20] = null
-    const r = evaluateRules({ ...healthy(), dassItems: items })
+  it('R1: ítem 21 no evaluable (null) la dispara', () => {
+    const r = evaluateRules({ ...healthy(), item21: null })
     expect(r.triggered.map((o) => o.code)).toContain('R1')
     expect(r.suicideAlert).toBe(true)
-    expect(r.scores.depresionIncompleta).toBe(true)
   })
 
-  it('R2: ansiedad severa (8)', () => {
-    const items = Array.from({ length: 21 }, () => 0)
-    // ansiedad: ítems 2,4,7,9,15,19,20 → total 8
-    ;[2, 4, 7, 9].forEach((n) => (items[n - 1] = 2))
-    expect(codes({ ...healthy(), dassItems: items })).toContain('R2')
+  it('R2: ansiedad severa (8) la dispara; moderada (7) no', () => {
+    expect(codes({ ...healthy(), dass: { depresion: 0, ansiedad: 8, estres: 0 } })).toContain('R2')
+    expect(codes({ ...healthy(), dass: { depresion: 0, ansiedad: 7, estres: 0 } })).not.toContain('R2')
   })
 
   it('R3: WHO-5 bruto 7 (28 %) la dispara; 8 (32 %) no', () => {
-    expect(codes({ ...healthy(), who5Items: [2, 2, 1, 1, 1] })).toContain('R3')
-    expect(codes({ ...healthy(), who5Items: [2, 2, 2, 1, 1] })).not.toContain('R3')
+    expect(codes({ ...healthy(), who5Total: 7 })).toContain('R3')
+    expect(codes({ ...healthy(), who5Total: 8 })).not.toContain('R3')
+  })
+
+  it('R4: dos subescalas moderadas la disparan; una no', () => {
+    expect(codes({ ...healthy(), dass: { depresion: 7, ansiedad: 6, estres: 0 } })).toContain('R4')
+    expect(codes({ ...healthy(), dass: { depresion: 7, ansiedad: 0, estres: 0 } })).not.toContain('R4')
   })
 
   it('R5: exactamente 2 marcadores no alcanza; 3 sí', () => {
@@ -95,15 +93,14 @@ describe('evaluateRules', () => {
   it('Caso Anexo E: dispara R2, R4 y R5 (no R1 ni R3)', () => {
     const f = ANEXO_E
     const r = evaluateRules({
-      dassItems: f.dass21_items,
-      who5Items: f.who5_items,
+      who5Total: f.who5_total,
+      dass: { depresion: f.dass_depresion, ansiedad: f.dass_ansiedad, estres: f.dass_estres },
+      item21: f.dass_item21,
       v13ApoyoFamiliar: f.v13_apoyo_familiar,
       v14ActividadFisica: f.v14_actividad_fisica,
       v15CalidadSueno: f.v15_calidad_sueno,
       alertasProfesional: f.alertas_profesional,
     })
-    expect(r.scores).toMatchObject({ depresion: 9, ansiedad: 8, estres: 12 })
-    expect(r.who5Total).toBe(8)
     expect(r.who5Percent).toBe(32)
     expect(r.triggered.map((o) => o.code)).toEqual(['R2', 'R4', 'R5'])
   })

@@ -13,6 +13,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@hookform/resolvers": "^6.0.1",
     "chart.js": "^4.6.1",
     "react": "^19.3.1",

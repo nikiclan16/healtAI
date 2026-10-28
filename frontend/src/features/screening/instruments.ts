@@ -1,65 +1,59 @@
-import { DASS_SCALE_ITEMS } from '@/rules/scoring'
-import type { DassScale } from '@/rules'
+import type { Treatment } from '@/services/contract'
 
-export const HEALTH_5 = [
-  { value: 1, label: 'Muy mala' },
-  { value: 2, label: 'Mala' },
-  { value: 3, label: 'Regular' },
-  { value: 4, label: 'Buena' },
-  { value: 5, label: 'Muy buena' },
+/** Opciones de los selectores del formulario (textos del mockup RF02). */
+
+export const TREATMENT_OPTIONS: { value: Treatment; label: string }[] = [
+  { value: 'dieta_ejercicio', label: 'Dieta y Ejercicio Únicamente' },
+  { value: 'orales', label: 'Hipoglucemiantes Orales' },
+  { value: 'insulina', label: 'Insulina' },
+  { value: 'orales_insulina', label: 'Orales + Insulina Combinados' },
+  { value: 'ninguno', label: 'Sin Tratamiento Activo' },
 ]
 
-export const SUPPORT_5 = [
-  { value: 1, label: 'Nulo / aislado' },
-  { value: 2, label: 'Bajo' },
-  { value: 3, label: 'Moderado' },
-  { value: 4, label: 'Alto' },
-  { value: 5, label: 'Muy alto' },
+export const HEALTH_PERCEPTION = [
+  { value: 1, label: '1 - Muy Mala' },
+  { value: 2, label: '2 - Mala' },
+  { value: 3, label: '3 - Regular / Aceptable' },
+  { value: 4, label: '4 - Buena' },
+  { value: 5, label: '5 - Muy Buena' },
 ]
 
-export const ACTIVITY_4 = [
-  { value: 0, label: 'Ninguno' },
-  { value: 1, label: '1 a 2 días/sem' },
-  { value: 2, label: '3 a 4 días/sem' },
-  { value: 3, label: '5 a 7 días/sem' },
+export const PHYSICAL_ACTIVITY = [
+  { value: 0, label: '0 - Sedentario (Ningún día/semana)' },
+  { value: 1, label: '1 - Ocasional (1-2 días/semana)' },
+  { value: 2, label: '2 - Regular (3-4 días/semana)' },
+  { value: 3, label: '3 - Activo (5-7 días/semana)' },
 ]
 
-export const ADA_4 = [1, 2, 3, 4].map((n) => ({ value: n, label: `Nivel ${n}` }))
-
-/**
- * Textos de los instrumentos.
- * WHO-5: versión en español de la OMS. DASS-21: PENDIENTE cargar el texto validado
- * que use el estudio (ver docs/); mientras tanto se muestra "Ítem N" + subescala.
- */
-export const WHO5_ITEMS = [
-  'Me he sentido alegre y de buen humor',
-  'Me he sentido tranquilo/a y relajado/a',
-  'Me he sentido activo/a y enérgico/a',
-  'Me he despertado sintiéndome fresco/a y descansado/a',
-  'Mi vida diaria ha estado llena de cosas que me interesan',
+export const SLEEP_QUALITY = [
+  { value: 1, label: '1 - Muy Mala (Insomnio severo)' },
+  { value: 2, label: '2 - Mala / Interrumpido' },
+  { value: 3, label: '3 - Regular' },
+  { value: 4, label: '4 - Buena' },
+  { value: 5, label: '5 - Muy Buena / Reparador' },
 ]
 
-export const WHO5_OPTIONS = [
-  { value: 5, label: 'Todo el tiempo' },
-  { value: 4, label: 'La mayor parte' },
-  { value: 3, label: 'Más de la mitad' },
-  { value: 2, label: 'Menos de la mitad' },
-  { value: 1, label: 'De vez en cuando' },
-  { value: 0, label: 'Nunca' },
+export const FAMILY_SUPPORT = [
+  { value: 1, label: '1 - Nulo / Aislado' },
+  { value: 2, label: '2 - Bajo' },
+  { value: 3, label: '3 - Moderado' },
+  { value: 4, label: '4 - Alto' },
+  { value: 5, label: '5 - Muy Alto / Sólido' },
 ]
 
-export const DASS_OPTIONS = [
-  { value: 0, label: 'No me ha ocurrido' },
-  { value: 1, label: 'Un poco / parte del tiempo' },
-  { value: 2, label: 'Bastante / buena parte del tiempo' },
-  { value: 3, label: 'Mucho / la mayor parte del tiempo' },
+/** Nivel de riesgo de amputación ADA/IWGDF (solo uso clínico; no entra al modelo). */
+export const AMPUTATION_RISK = [
+  { value: 1, label: 'Nivel 1' },
+  { value: 2, label: 'Nivel 2' },
+  { value: 3, label: 'Nivel 3' },
+  { value: 4, label: 'Nivel 4' },
 ]
 
-/** Subescala de cada ítem (1–21). */
-export const DASS_ITEM_SCALE: Record<number, DassScale> = Object.fromEntries(
-  (Object.entries(DASS_SCALE_ITEMS) as [DassScale, readonly number[]][]).flatMap(([scale, items]) =>
-    items.map((n) => [n, scale] as const),
-  ),
-)
-
-export const DASS_ITEM_TEXT = (n: number) => `Ítem ${n}` // TODO: texto validado del DASS-21
+/** Ítem 21 del DASS-21. "no_evaluable" se guarda como `null` y activa R1. */
+export const ITEM21_OPTIONS = [
+  { value: '0', label: '0 - No me aplicó en absoluto' },
+  { value: '1', label: '1 - Me aplicó en algún grado' },
+  { value: '2', label: '2 - Me aplicó en grado considerable (Trigger R1)' },
+  { value: '3', label: '3 - Me aplicó mucho o la mayor parte (Trigger R1)' },
+  { value: 'ne', label: 'No evaluable (Trigger R1)' },
+]

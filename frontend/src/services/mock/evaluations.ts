@@ -3,7 +3,7 @@ import { ApiError } from '../interfaces'
 import type { Evaluation } from '../types'
 import { delay } from './auth'
 
-const KEY = 'healthai.mock.evaluations'
+const KEY = 'healthai.mock.evaluations.v2'
 
 function readAll(): Evaluation[] {
   try {

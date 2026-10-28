@@ -5,7 +5,11 @@ export const btnPrimary =
 export const btnSecondary =
   'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50'
 export const inputClass =
-  'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cuc-blue focus:ring-2 focus:ring-cuc-blue/30'
+  'w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-800 outline-none focus:border-cuc-blue focus:ring-2 focus:ring-cuc-blue/30'
+
+export function Icon({ name, className = '' }: { name: string; className?: string }) {
+  return <i aria-hidden="true" className={`fa-solid fa-${name} ${className}`} />
+}
 
 export function Card({ title, children, className = '' }: { title?: ReactNode; children: ReactNode; className?: string }) {
   return (
@@ -16,12 +20,15 @@ export function Card({ title, children, className = '' }: { title?: ReactNode; c
   )
 }
 
-export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
+export function Field({ label, hint, error, right, children }: { label: string; hint?: string; error?: string; right?: ReactNode; children: ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-700">{label}</label>
+      <div className="mb-1 flex items-center justify-between">
+        <label className="text-[11px] font-semibold text-slate-700">{label}</label>
+        {right}
+      </div>
       {children}
-      {hint && !error && <p className="mt-1 text-[11px] text-slate-500">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-[10px] text-slate-500">{hint}</p>}
       {error && (
         <p role="alert" className="mt-1 text-[11px] font-medium text-cuc-alert">
           {error}
@@ -43,61 +50,92 @@ export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: R
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>
 }
 
-interface Option<T> {
-  value: T
+/**
+ * Deslizador. Mientras `value` sea `undefined` se muestra atenuado ("sin responder"):
+ * evita que un valor por defecto pase como respuesta clínica. Se confirma al interactuar.
+ */
+export function Slider({
+  value,
+  onChange,
+  min,
+  max,
+  label,
+  accent = 'accent-cuc-blue',
+}: {
+  value: number | undefined
+  onChange: (v: number) => void
+  min: number
+  max: number
   label: string
+  accent?: string
+}) {
+  return (
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={1}
+      value={value ?? min}
+      aria-label={label}
+      onChange={(e) => onChange(Number(e.target.value))}
+      onPointerUp={(e) => onChange(Number(e.currentTarget.value))}
+      className={`w-full ${accent} ${value === undefined ? 'opacity-40' : ''}`}
+    />
+  )
 }
 
-/** Grupo de opciones tipo radio (escalas Likert / ordinales). */
-export function OptionGroup<T extends number>({
+export function NumSelect({
   value,
   onChange,
   options,
   label,
-  columns,
+  placeholder = 'Seleccione…',
 }: {
-  value: T | undefined
-  onChange: (v: T) => void
-  options: Option<T>[]
+  value: number | undefined
+  onChange: (v: number | undefined) => void
+  options: { value: number; label: string }[]
   label: string
-  columns?: string
+  placeholder?: string
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className={`grid gap-2 ${columns ?? 'grid-cols-2 sm:grid-cols-5'}`}>
-      {options.map((o) => {
-        const selected = value === o.value
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(o.value)}
-            className={`rounded-lg border px-2 py-2 text-left text-xs transition ${
-              selected
-                ? 'border-cuc-blue bg-cuc-light font-bold text-cuc-blue'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <span className="font-mono">{o.value}</span> · {o.label}
-          </button>
-        )
-      })}
-    </div>
+    <select
+      aria-label={label}
+      value={value === undefined ? '' : String(value)}
+      onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+      className={`${inputClass} cursor-pointer`}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   )
 }
 
-/** Casilla binaria 0/1 del contrato de datos. */
-export function BinaryCheck({ label, value, onChange }: { label: string; value: 0 | 1 | undefined; onChange: (v: 0 | 1) => void }) {
+/** Notificación modal del sistema (igual que el mockup). */
+export function Modal({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  if (!open) return null
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-      <input
-        type="checkbox"
-        checked={value === 1}
-        onChange={(e) => onChange(e.target.checked ? 1 : 0)}
-        className="h-4 w-4 rounded border-slate-300 text-cuc-blue"
-      />
-      {label}
-    </label>
+    <div role="dialog" aria-modal="true" aria-label={title} className="no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between bg-cuc-navy p-4 text-white">
+          <h3 className="flex items-center gap-2 text-sm font-bold">
+            <Icon name="circle-info" className="text-blue-400" />
+            <span>{title}</span>
+          </h3>
+          <button type="button" aria-label="Cerrar" onClick={onClose} className="text-slate-300 hover:text-white">
+            <Icon name="xmark" />
+          </button>
+        </div>
+        <div className="space-y-3 p-5 text-xs text-slate-700">{children}</div>
+        <div className="flex justify-end border-t border-slate-100 bg-slate-50 p-3">
+          <button type="button" onClick={onClose} className="rounded-lg bg-cuc-navy px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

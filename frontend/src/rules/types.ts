@@ -29,23 +29,19 @@ export interface AlertasProfesional {
   riesgo_urgente: boolean
 }
 
+/** Puntaje bruto de cada subescala del DASS-21 (0–21). */
+export type DassScores = Record<DassScale, number>
+
 export interface RulesInput {
-  /** 21 ítems DASS-21 (0–3). El ítem 21 puede ser `null` = no evaluable. */
-  dassItems: ReadonlyArray<number | null | undefined>
-  /** 5 ítems WHO-5 (0–5). */
-  who5Items: readonly number[]
+  /** Puntaje bruto WHO-5 (0–25). */
+  who5Total: number
+  dass: DassScores
+  /** Ítem 21 del DASS-21 (0–3). `null` = no evaluable. */
+  item21: number | null
   v13ApoyoFamiliar: number
   v14ActividadFisica: number
   v15CalidadSueno: number
   alertasProfesional: AlertasProfesional
-}
-
-export interface DassScores {
-  depresion: number
-  ansiedad: number
-  estres: number
-  /** true si faltan ítems en la subescala de depresión (p. ej. ítem 21 no evaluable). */
-  depresionIncompleta: boolean
 }
 
 export interface RuleOutcome {

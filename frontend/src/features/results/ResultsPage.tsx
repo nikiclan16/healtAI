@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, Card, btnSecondary } from '@/components/ui'
+import { MODEL_CARD } from '@/config/app'
+import { Card, Icon } from '@/components/ui'
 import { DecisionPanel } from '@/features/decision/DecisionPanel'
-import { SCALE_LABEL } from '@/rules'
 import { services } from '@/services'
-import type { Evaluation } from '@/services/types'
+import type { Confidence, Evaluation } from '@/services/types'
 import { ROUTE_ACTIONS } from './actions'
 import { ShapChart } from './ShapChart'
 
-const confTone = { Alta: 'ok', Media: 'warn', Baja: 'danger' } as const
+const CONFIDENCE: Record<Confidence, { dot: string; text: string }> = {
+  Alta: { dot: 'bg-emerald-500', text: 'Coincide con el consenso unánime o mayoritario de los modelos retadores (KNN, MLP y consenso).' },
+  Media: { dot: 'bg-amber-500', text: 'Concordancia parcial con los modelos retadores: interprete la ruta con cautela.' },
+  Baja: { dot: 'bg-red-500', text: 'Los modelos retadores discrepan: la ruta debe confirmarse con el criterio clínico.' },
+}
 
+const cardLabel = 'block text-[11px] font-semibold uppercase tracking-wider text-slate-400'
+const box = 'space-y-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm'
+
+/** Resultado del tamizaje: estratificación (RF04), motor de reglas (RF05) y decisión humana (RF06). */
 export function ResultsPage() {
   const { id = '' } = useParams()
   const [evaluation, setEvaluation] = useState<Evaluation | null | undefined>(undefined)
@@ -32,100 +40,168 @@ export function ResultsPage() {
   }
 
   const { prediccion: p, reglas, rutaSistema } = evaluation
+  const baseIsA = p.rutaBase === 'A'
+  const finalIsA = rutaSistema === 'A'
+  const conf = CONFIDENCE[p.confianza]
+  const mlpAgrees = p.retadores ? Math.abs(p.retadores.mlp - p.probabilidadRA) < 0.1 : false
   const actions = ROUTE_ACTIONS[rutaSistema]
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Resultado del tamizaje</h1>
-          <p className="font-mono text-xs text-slate-500">
-            {evaluation.codigoPaciente} · {evaluation.sede} · {new Date(evaluation.creadoEn).toLocaleString('es-CO')} · {evaluation.profesional.nombre}
-          </p>
-          <p className="font-mono text-[11px] text-slate-400">
-            sistema v{evaluation.versiones.app} · modelo {evaluation.versiones.modelo} · diccionario {evaluation.versiones.diccionario}
-          </p>
-        </div>
-        <button type="button" className={`${btnSecondary} no-print`} onClick={() => window.print()}>
-          Exportar / imprimir PDF
-        </button>
+    <div className="space-y-6">
+      <div className="border-b border-slate-200 pb-4">
+        <span className="text-xs font-bold uppercase tracking-wider text-cuc-blue">Requisito Funcional 04</span>
+        <h1 className="text-xl font-bold text-slate-900">Estratificación, Nivel de Confianza y Explicabilidad (XAI)</h1>
+        <p className="mt-1 font-mono text-xs text-slate-500">
+          {evaluation.codigoPaciente} · {evaluation.sede} · {new Date(evaluation.creadoEn).toLocaleString('es-CO')} · {evaluation.profesional.nombre}
+        </p>
+        <p className="font-mono text-[11px] text-slate-400">
+          sistema v{evaluation.versiones.app} · modelo {evaluation.versiones.modelo} · diccionario {evaluation.versiones.diccionario}
+        </p>
       </div>
 
       {reglas.suicideAlert && (
-        <div role="alert" className="rounded-lg border-2 border-cuc-alert bg-red-50 p-4 text-sm font-bold text-red-800">
+        <div role="alert" className="flex items-center gap-3 rounded-xl border-2 border-cuc-alert bg-red-50 p-4 text-sm font-bold text-red-800">
+          <Icon name="triangle-exclamation" className="text-lg" />
           ALERTA DE RIESGO SUICIDA (R1): escalamiento obligatorio a Ruta A.
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Ruta sugerida">
-          <div className={`rounded-lg p-4 text-center text-2xl font-extrabold text-white ${rutaSistema === 'A' ? 'bg-cuc-alert' : 'bg-cuc-green'}`}>
-            Ruta {rutaSistema}
+      {/* RF04 · tarjetas principales */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className={box}>
+          <span className={cardLabel}>Estratificación Supervisada</span>
+          <div className="flex items-baseline gap-2">
+            <span className={`font-mono text-3xl font-extrabold ${baseIsA ? 'text-cuc-alert' : 'text-cuc-green'}`}>{(p.probabilidadRA * 100).toFixed(1)}%</span>
+            <span className="font-mono text-xs text-slate-500">P(RA)</span>
           </div>
-          <p className="mt-2 text-xs text-slate-600">
-            Ruta base del modelo: <strong>Ruta {p.rutaBase}</strong>
-            {evaluation.escalada && <> · <Badge tone="danger">Escalada por reglas</Badge></>}
-          </p>
-        </Card>
-
-        <Card title="P(Ruta A)">
-          <div className="font-mono text-3xl font-bold text-slate-900">{(p.probabilidadRA * 100).toFixed(1)} %</div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full bg-cuc-blue" style={{ width: `${p.probabilidadRA * 100}%` }} />
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-xs text-slate-600">Ruta Base Estimada:</span>
+            <span className={`rounded border px-2 py-0.5 text-xs font-bold ${baseIsA ? 'border-red-200 bg-red-100 text-red-800' : 'border-emerald-200 bg-emerald-100 text-emerald-800'}`}>
+              {baseIsA ? 'Ruta A (Atención Prioritaria)' : 'Ruta B (Seguimiento)'}
+            </span>
           </div>
-        </Card>
+          <div className="pt-1 text-[10px] text-slate-400">Umbral institucional de decisión: P(RA) ≥ 50.0%</div>
+        </div>
 
-        <Card title="Nivel de confianza">
-          <Badge tone={confTone[p.confianza]}>{p.confianza}</Badge>
+        <div className={box}>
+          <span className={cardLabel}>Robustez de Predicción</span>
+          <div className="flex items-center gap-2">
+            <span className={`h-3 w-3 rounded-full ${conf.dot}`} />
+            <span className="text-xl font-bold text-slate-800">{p.confianza} Confianza</span>
+          </div>
+          <p className="text-xs text-slate-600">{conf.text}</p>
           {p.retadores && (
-            <ul className="mt-2 space-y-0.5 font-mono text-xs text-slate-600">
-              <li>KNN: {(p.retadores.knn * 100).toFixed(1)} %</li>
-              <li>MLP: {(p.retadores.mlp * 100).toFixed(1)} %</li>
-              <li>Consenso: {(p.retadores.consenso * 100).toFixed(1)} %</li>
-            </ul>
+            <p className="font-mono text-[10px] text-slate-500">
+              KNN {(p.retadores.knn * 100).toFixed(1)}% · MLP {(p.retadores.mlp * 100).toFixed(1)}% · Consenso {(p.retadores.consenso * 100).toFixed(1)}%
+            </p>
           )}
-        </Card>
+          {mlpAgrees && (
+            <div className="w-fit rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Concordancia con Red Neuronal</div>
+          )}
+        </div>
+
+        <div className={box}>
+          <span className={cardLabel}>Artefacto Productivo</span>
+          <div className="text-sm font-bold text-slate-800">{MODEL_CARD.nombre}</div>
+          <div className="space-y-1 font-mono text-xs text-slate-500">
+            {MODEL_CARD.detalles.map((d) => <div key={d}>• {d}</div>)}
+          </div>
+        </div>
       </div>
 
-      <Card title="Factores determinantes (Top 3 SHAP)">
-        <ShapChart factors={p.shapTop3} />
-        <ul className="mt-3 space-y-1 text-xs text-slate-600">
-          {p.shapTop3.map((f) => (
-            <li key={f.variable}>
-              <Badge tone={f.direccion === 'riesgo' ? 'danger' : 'ok'}>{f.direccion === 'riesgo' ? 'Aumenta riesgo' : 'Protector'}</Badge>{' '}
-              <strong>{f.etiqueta}</strong> ({f.valor > 0 ? '+' : ''}{f.valor.toFixed(3)}) {f.descripcion && `— ${f.descripcion}`}
-            </li>
-          ))}
-        </ul>
-      </Card>
+      {/* RF04 · explicabilidad */}
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div className="flex items-center gap-2">
+            <Icon name="chart-bar" className="text-cuc-blue" />
+            <h2 className="text-xs font-bold text-slate-800 sm:text-sm">Explicabilidad Individual (Linear SHAP Values - Top Factores)</h2>
+          </div>
+          <span className="font-mono text-[11px] text-slate-500">Valores de impacto local</span>
+        </div>
+        <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
+          <ShapChart factors={p.shapTop3} />
+          <div className="space-y-2 text-xs">
+            {p.shapTop3.map((f) => {
+              const risk = f.direccion === 'riesgo'
+              return (
+                <div key={f.variable} className={`flex items-start gap-2 rounded-lg border p-2.5 ${risk ? 'border-red-100 bg-red-50' : 'border-emerald-100 bg-emerald-50'}`}>
+                  <Icon name={risk ? 'arrow-trend-up' : 'shield-heart'} className={`mt-0.5 ${risk ? 'text-red-600' : 'text-emerald-600'}`} />
+                  <div>
+                    <span className={`font-bold ${risk ? 'text-red-900' : 'text-emerald-900'}`}>{f.etiqueta} ({f.valor > 0 ? '+' : ''}{f.valor.toFixed(3)})</span>
+                    {f.descripcion && <p className={`text-[11px] ${risk ? 'text-red-700' : 'text-emerald-700'}`}>{f.descripcion}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
 
-      <Card title="Motor de reglas de seguridad clínica">
-        <ul className="space-y-2">
-          {reglas.outcomes.map((o) => (
-            <li key={o.code} className={`flex gap-3 rounded-lg border p-2 text-xs ${o.triggered ? 'border-red-200 bg-red-50' : 'border-slate-200'}`}>
-              <span className={`font-mono font-bold ${o.triggered ? 'text-cuc-alert' : 'text-slate-400'}`}>{o.code}</span>
-              <span className="flex-1">
-                <span className="font-semibold">{o.name}</span>
-                <span className="block text-slate-600">{o.detail}</span>
+      {/* RF05 · motor de reglas */}
+      <div className="border-b border-slate-200 pb-3 pt-2">
+        <span className="text-xs font-bold uppercase tracking-wider text-cuc-blue">Requisito Funcional 05</span>
+        <h2 className="text-xl font-bold text-slate-900">Motor de Reglas Clínicas de Seguridad (R1 a R5)</h2>
+      </div>
+
+      <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 ${finalIsA ? 'border-red-200 bg-red-50/80' : 'border-emerald-200 bg-emerald-50'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full text-lg text-white ${finalIsA ? 'bg-red-600' : 'bg-emerald-600'}`}>
+            <Icon name={finalIsA ? 'triangle-exclamation' : 'check'} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Ruta Clínica Recomendada:{' '}
+              <span className={finalIsA ? 'text-red-700' : 'text-emerald-700'}>
+                {finalIsA ? 'RUTA A (Atención Prioritaria en Salud Mental)' : 'RUTA B (Seguimiento Programado)'}
               </span>
-              <Badge tone={o.triggered ? 'danger' : 'neutral'}>{o.triggered ? 'Dispara' : 'No dispara'}</Badge>
-            </li>
+            </h3>
+            <p className="text-xs text-slate-600">
+              {evaluation.escalada
+                ? 'Paciente escalado automáticamente de Ruta B a Ruta A por activación de reglas psicométricas de seguridad.'
+                : 'Evaluación coherente con la estratificación y los protocolos de bienestar.'}
+            </p>
+          </div>
+        </div>
+        <span className={`rounded-full px-3 py-1 font-mono text-xs font-bold ${finalIsA ? 'bg-red-200 text-red-900' : 'bg-emerald-200 text-emerald-900'}`}>
+          {reglas.triggered.length} Reglas Activadas
+        </span>
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="flex items-center gap-2 text-xs font-bold text-slate-800 sm:text-sm">
+          <Icon name="list-check" className="text-cuc-blue" />
+          <span>Estado del Motor Determinístico de Reglas Clínicas</span>
+        </h3>
+
+        <div className="grid grid-cols-1 gap-3 text-xs md:grid-cols-2">
+          {reglas.outcomes.map((o) => (
+            <div
+              key={o.code}
+              className={`flex items-center justify-between gap-3 rounded-lg border p-3 ${o.triggered ? 'border-red-300 bg-red-50 text-red-900' : 'border-slate-200 bg-slate-50 text-slate-600'} ${o.code === 'R5' || o.code === 'SEG' ? 'md:col-span-2' : ''}`}
+            >
+              <div>
+                <div className="font-bold">{o.code === 'SEG' ? 'Regla de Seguridad' : `Regla ${o.code}`}: {o.name}</div>
+                <div className="text-[11px] text-slate-500">{o.detail}</div>
+              </div>
+              <span className={`font-mono font-bold ${o.triggered ? 'text-red-600' : 'text-slate-400'}`}>{o.triggered ? 'ACTIVADA' : 'INACTIVA'}</span>
+            </div>
           ))}
-        </ul>
-        <p className="mt-3 text-xs text-slate-500">
-          WHO-5: {reglas.who5Total}/25 ({reglas.who5Percent} %) · {(['depresion', 'ansiedad', 'estres'] as const)
-            .map((s) => `${SCALE_LABEL[s]} ${reglas.scores[s]} (${reglas.levels[s]})`)
-            .join(' · ')}
-          {reglas.scores.depresionIncompleta && ' · Depresión calculada con ítems incompletos'}
-        </p>
-      </Card>
+        </div>
 
-      <Card title={actions.title}>
-        <ul className="list-inside list-disc space-y-1 text-sm text-slate-700">
-          {actions.items.map((a) => <li key={a}>{a}</li>)}
-        </ul>
-      </Card>
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <span className="block text-xs font-bold uppercase tracking-wider text-slate-800">{actions.title}</span>
+          <div className="grid grid-cols-1 gap-2 text-xs text-slate-700 sm:grid-cols-2">
+            {actions.items.map((a) => (
+              <div key={a} className="flex items-center gap-2">
+                <Icon name="check" className="text-cuc-green" />
+                <span>{a}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
+      {/* RF06 · decisión humana */}
       <DecisionPanel evaluation={evaluation} onSaved={setEvaluation} />
     </div>
   )

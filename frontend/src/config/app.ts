@@ -1,4 +1,4 @@
-import type { Role, SiteCode } from '@/services/types'
+import type { Cargo, Role, SiteCode } from '@/services/types'
 
 export const APP_NAME = 'healthAI'
 export const APP_VERSION = '0.1.0'
@@ -16,13 +16,23 @@ export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? 'http:/
 export const DISCLAIMER =
   'Herramienta de apoyo a la toma de decisiones clínicas. Las recomendaciones automatizadas no reemplazan el juicio profesional ni constituyen diagnóstico clínico.'
 
-export const SITES: Record<SiteCode, { code: SiteCode; ciudad: string; nombre: string }> = {
-  BAQ: { code: 'BAQ', ciudad: 'Barranquilla', nombre: 'CAP Barranquilla' },
-  RHA: { code: 'RHA', ciudad: 'Riohacha', nombre: 'CAP Riohacha' },
-  VUP: { code: 'VUP', ciudad: 'Valledupar', nombre: 'CAP Valledupar' },
+export const SITES: Record<SiteCode, { code: SiteCode; ciudad: string; centro: string; nombre: string }> = {
+  BAQ: { code: 'BAQ', ciudad: 'Barranquilla', centro: 'CAP Metropolitano', nombre: 'CAP Barranquilla (Sede Norte)' },
+  RHA: { code: 'RHA', ciudad: 'Riohacha', centro: 'CAP Comunitario', nombre: 'CAP Riohacha (Sede Guajira)' },
+  VUP: { code: 'VUP', ciudad: 'Valledupar', centro: 'CAP Integral', nombre: 'CAP Valledupar (Sede Cesar)' },
 }
 
-export const ROLE_LABEL: Record<Role, string> = {
-  evaluador: 'Profesional de la salud / Evaluador',
-  investigador: 'Investigador / Administrador',
+/** Roles operativos del portal de acceso y el perfil RBAC al que corresponden. */
+export const CARGOS: Record<Cargo, { label: string; rol: Role }> = {
+  medico: { label: 'Médico de Atención Primaria', rol: 'evaluador' },
+  psicologo: { label: 'Psicólogo Clínico', rol: 'evaluador' },
+  enfermeria: { label: 'Enfermería Especializada', rol: 'evaluador' },
+  investigador: { label: 'Investigador CUC (Auditor)', rol: 'investigador' },
+}
+
+/** Ficha del artefacto productivo (Documento Técnico). */
+export const MODEL_CARD = {
+  nombre: 'Regresión Logística L2 (S2)',
+  descripcion: 'S2: Clínicas + WHO-5',
+  detalles: ['Regularización C: 0.01 (Moda)', 'Balanced Acc (LOOCV): 67.8%', 'Sensibilidad RA: 80.0%'],
 }

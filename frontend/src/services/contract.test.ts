@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { buildModelInput, ScreeningSchema } from './contract'
 import { ANEXO_E } from './fixtures/anexoE'
 
-const clone = () => structuredClone(ANEXO_E)
+type Form = ReturnType<typeof structuredClone<typeof ANEXO_E>>
+const clone = (): Form => structuredClone(ANEXO_E)
 
 describe('ScreeningSchema', () => {
   it('acepta el caso Anexo E', () => {
@@ -10,13 +11,17 @@ describe('ScreeningSchema', () => {
   })
 
   it.each([
-    ['V8 > 80', (f: ReturnType<typeof clone>) => (f.v8_tiempo_diagnostico = 81)],
-    ['V8 < 0', (f: ReturnType<typeof clone>) => (f.v8_tiempo_diagnostico = -1)],
-    ['V12 = 0', (f: ReturnType<typeof clone>) => (f.v12_percepcion_salud = 0)],
-    ['V14 = 4', (f: ReturnType<typeof clone>) => (f.v14_actividad_fisica = 4)],
-    ['ítem DASS = 4', (f: ReturnType<typeof clone>) => (f.dass21_items[0] = 4)],
-    ['ítem WHO-5 = 6', (f: ReturnType<typeof clone>) => (f.who5_items[0] = 6)],
-    ['ADA = 5', (f: ReturnType<typeof clone>) => (f.nivel_riesgo_amputacion = 5)],
+    ['V8 > 80', (f: Form) => (f.v8_tiempo_diagnostico = 81)],
+    ['V8 < 0', (f: Form) => (f.v8_tiempo_diagnostico = -1)],
+    ['V12 = 0', (f: Form) => (f.v12_percepcion_salud = 0)],
+    ['V14 = 4', (f: Form) => (f.v14_actividad_fisica = 4)],
+    ['WHO-5 = 26', (f: Form) => (f.who5_total = 26)],
+    ['WHO-5 = -1', (f: Form) => (f.who5_total = -1)],
+    ['DASS depresión = 22', (f: Form) => (f.dass_depresion = 22)],
+    ['DASS ansiedad = -1', (f: Form) => (f.dass_ansiedad = -1)],
+    ['DASS estrés = 22', (f: Form) => (f.dass_estres = 22)],
+    ['ítem 21 = 4', (f: Form) => (f.dass_item21 = 4)],
+    ['ADA = 5', (f: Form) => (f.nivel_riesgo_amputacion = 5)],
   ])('rechaza %s', (_name, mutate) => {
     const f = clone()
     mutate(f)
@@ -29,25 +34,17 @@ describe('ScreeningSchema', () => {
     expect(ScreeningSchema.safeParse(f).success).toBe(false)
   })
 
-  it('"Ninguno" en tratamiento excluye las demás opciones', () => {
-    const f = clone()
-    f.v9 = { dieta_ejercicio: 1, orales: 0, insulina: 0, orales_insulina: 0, ninguno: 1 }
+  it('exige elegir un tratamiento', () => {
+    const f = { ...clone(), v9_tratamiento: undefined }
     expect(ScreeningSchema.safeParse(f).success).toBe(false)
   })
 
-  it('exige al menos una comorbilidad u "Ninguna"', () => {
-    const f = clone()
-    f.v11 = { ninguna: 0, hipertension: 0, cardiaca: 0, obesidad: 0, otra: 0 }
-    expect(ScreeningSchema.safeParse(f).success).toBe(false)
-  })
-
-  it('solo el ítem 21 puede ser no evaluable (null)', () => {
+  it('el ítem 21 admite null (no evaluable) pero no undefined', () => {
     const ok = clone()
-    ok.dass21_items[20] = null
+    ok.dass_item21 = null
     expect(ScreeningSchema.safeParse(ok).success).toBe(true)
-    const bad = clone()
-    bad.dass21_items[3] = null
-    expect(ScreeningSchema.safeParse(bad).success).toBe(false)
+    const missing = { ...clone(), dass_item21: undefined }
+    expect(ScreeningSchema.safeParse(missing).success).toBe(false)
   })
 })
 
@@ -56,7 +53,20 @@ describe('buildModelInput', () => {
     expect(Object.keys(buildModelInput(ANEXO_E))).toHaveLength(15)
   })
 
-  it('calcula WHO5_Total a partir de los ítems', () => {
+  it('mapea el tratamiento elegido a variables binarias excluyentes', () => {
+    const m = buildModelInput(ANEXO_E)
+    expect(m.V9_Trat_Orales).toBe(1)
+    expect(m.V9_Trat_Insulina + m.V9_Trat_DietaEjercicio + m.V9_Trat_OralesInsulina + m.V9_Trat_Ninguno).toBe(0)
+  })
+
+  it('deriva "Ninguna" comorbilidad solo cuando no hay ninguna marcada', () => {
+    expect(buildModelInput(ANEXO_E).V11_Enf_Ninguna).toBe(0)
+    const none = clone()
+    none.v11 = { hipertension: false, cardiaca: false, obesidad: false, otra: false }
+    expect(buildModelInput(none).V11_Enf_Ninguna).toBe(1)
+  })
+
+  it('usa WHO5_Total del formulario', () => {
     expect(buildModelInput(ANEXO_E).WHO5_Total).toBe(8)
   })
 

@@ -20,7 +20,7 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 3. La regla de seguridad (`SEG`) fuerza Ruta A y no se puede degradar a B desde la UI (`DecisionPanel`).
 4. Sin datos reales de pacientes: solo códigos seudonimizados; nunca cédula ni nombre.
 5. Los umbrales clínicos viven en `src/rules/config.ts`, no en componentes. Cambiarlos requiere validación del referente clínico.
-6. El rol de usuario lo asigna el servidor; la UI nunca deja elegirlo.
+6. El portal de acceso muestra el selector de **rol operativo** (como el mockup), pero el servidor valida que el usuario lo tenga asignado y decide el perfil RBAC. Nunca confiar en el rol que declara el cliente.
 
 ## Arquitectura
 
@@ -44,7 +44,7 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 
 ## Pendientes conocidos
 
-- Texto validado del DASS-21 (`features/screening/instruments.ts`).
+- El formulario captura WHO-5 y subescalas DASS-21 como **totales** (sliders / campos numéricos) y el ítem 21 como desplegable, igual que el mockup. La especificación RF02.2 pide los 21 ítems individuales: pendiente de decidir con el equipo clínico.
 - Contrato real de `/predecir`, `/auth/login`, `/evaluaciones`.
 - Validación clínica de umbrales (`rules/config.ts`).
 - Decidir cuántos roles hay (2 perfiles vs. 4 cargos).

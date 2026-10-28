@@ -8,15 +8,17 @@ import type { ScreeningForm } from '../contract'
 export const ANEXO_E: ScreeningForm = {
   codigo_paciente: 'PAC-2026-0048',
   v8_tiempo_diagnostico: 10,
-  v9: { dieta_ejercicio: 0, orales: 1, insulina: 0, orales_insulina: 0, ninguno: 0 },
-  v11: { ninguna: 0, hipertension: 1, cardiaca: 0, obesidad: 0, otra: 0 },
+  v9_tratamiento: 'orales',
+  v11: { hipertension: true, cardiaca: false, obesidad: false, otra: false },
   v12_percepcion_salud: 3,
   v13_apoyo_familiar: 4,
   v14_actividad_fisica: 0,
   v15_calidad_sueno: 2,
-  who5_items: [2, 1, 2, 1, 2],
-  // Ítems 1–21. Estrés (1,6,8,11,12,14,18)=12 · Ansiedad (2,4,7,9,15,19,20)=8 · Depresión (3,5,10,13,16,17,21)=9
-  dass21_items: [2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1],
+  who5_total: 8,
+  dass_depresion: 9,
+  dass_ansiedad: 8,
+  dass_estres: 12,
+  dass_item21: 1,
   nivel_riesgo_amputacion: 3,
   alertas_profesional: { riesgo_suicida: false, deterioro_agudo: false, riesgo_urgente: false },
 }

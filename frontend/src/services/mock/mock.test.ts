@@ -9,9 +9,10 @@ import { MOCK_USERS } from './users'
 describe('mockAuthService', () => {
   const user = MOCK_USERS[0]
 
-  it('inicia sesión con sede y vigencia de 8 h', async () => {
-    const s = await mockAuthService.login({ usuario: user.usuario, password: user.password, sede: 'RHA' })
+  it('inicia sesión con rol operativo, sede y vigencia de 8 h', async () => {
+    const s = await mockAuthService.login({ usuario: user.usuario, password: user.password, cargo: 'medico', sede: 'RHA' })
     expect(s.sede).toBe('RHA')
+    expect(s.user.cargo).toBe('medico')
     expect(s.user.rol).toBe('evaluador')
     const hours = (s.expiresAt - Date.now()) / 3_600_000
     expect(hours).toBeGreaterThan(7.9)
@@ -19,7 +20,19 @@ describe('mockAuthService', () => {
   })
 
   it('rechaza credenciales inválidas', async () => {
-    await expect(mockAuthService.login({ usuario: user.usuario, password: 'x', sede: 'BAQ' })).rejects.toThrow(/incorrectos/)
+    await expect(mockAuthService.login({ usuario: user.usuario, password: 'x', cargo: 'medico', sede: 'BAQ' })).rejects.toThrow(/incorrectos/)
+  })
+
+  it('el servidor rechaza un rol operativo no asignado (no hay auto-promoción)', async () => {
+    await expect(
+      mockAuthService.login({ usuario: user.usuario, password: user.password, cargo: 'investigador', sede: 'BAQ' }),
+    ).rejects.toThrow(/rol operativo/)
+  })
+
+  it('el investigador obtiene perfil RBAC de investigador', async () => {
+    const inv = MOCK_USERS[2]
+    const s = await mockAuthService.login({ usuario: inv.usuario, password: inv.password, cargo: 'investigador', sede: 'VUP' })
+    expect(s.user.rol).toBe('investigador')
   })
 })
 

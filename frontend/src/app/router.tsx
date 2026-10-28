@@ -8,12 +8,12 @@ import { ResultsPage } from '@/features/results/ResultsPage'
 import { ScreeningPage } from '@/features/screening/ScreeningPage'
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
   {
-    element: <RequireAuth />,
+    element: <Layout />,
     children: [
+      { path: '/login', element: <LoginPage /> },
       {
-        element: <Layout />,
+        element: <RequireAuth />,
         children: [
           { index: true, element: <DashboardPage /> },
           {

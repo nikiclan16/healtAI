@@ -3,16 +3,14 @@ import { Link } from 'react-router-dom'
 import { Badge, Card, btnPrimary } from '@/components/ui'
 import { useAuthStore } from '@/features/auth/authStore'
 import { services } from '@/services'
-import type { Evaluation, HealthStatus } from '@/services/types'
+import type { Evaluation } from '@/services/types'
 
 export function DashboardPage() {
   const session = useAuthStore((s) => s.session)!
-  const [health, setHealth] = useState<HealthStatus | null>(null)
   const [items, setItems] = useState<Evaluation[]>([])
 
   useEffect(() => {
     let cancelled = false
-    services.model.health().then((h) => !cancelled && setHealth(h))
     services.evaluations.list().then((l) => !cancelled && setItems(l))
     return () => {
       cancelled = true
@@ -29,13 +27,6 @@ export function DashboardPage() {
           <p className="text-xs text-slate-500">Tamizaje de salud mental en pacientes con DM2 en riesgo de amputación</p>
         </div>
         <div className="flex items-center gap-3">
-          {health === null ? (
-            <Badge>Verificando servicio…</Badge>
-          ) : health.ok ? (
-            <Badge tone="ok">API en línea{health.versionModelo ? ` · modelo ${health.versionModelo}` : ''}</Badge>
-          ) : (
-            <Badge tone="danger">API no disponible</Badge>
-          )}
           {session.user.rol === 'evaluador' && (
             <Link to="/evaluacion/nueva" className={btnPrimary}>Nueva evaluación</Link>
           )}

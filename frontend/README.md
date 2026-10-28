@@ -10,15 +10,15 @@ cp .env.example .env     # VITE_API_MODE=mock por defecto
 npm run dev              # http://localhost:5173
 ```
 
-Usuarios de prueba (solo demo): ver `src/services/mock/users.ts`. En la pantalla de nueva evaluación, el botón **Cargar caso Anexo E** rellena el formulario con el caso del prototipo (resultado esperado: Ruta A con R2, R4 y R5).
+Usuarios de prueba (solo demo): ver `src/services/mock/users.ts`. En la pantalla de nueva evaluación, el botón **Recargar Valores Anexo E** rellena el formulario con el caso del prototipo (resultado esperado: Ruta A con R2, R4 y R5).
 
 ## Qué incluye
 
 | Módulo | Estado |
 |---|---|
-| Login, selección de sede, sesión de 8 h, rutas protegidas, RBAC en UI | Hecho (auth simulada) |
-| Formulario de 4 pasos con validación zod y completitud | Hecho |
-| WHO-5 (5 ítems) y DASS-21 (21 ítems) con totales y subescalas | Hecho (texto DASS pendiente) |
+| Login con rol operativo, sede, sesión de 8 h, rutas protegidas, RBAC en UI | Hecho (auth simulada) |
+| Formulario en 3 secciones (sliders V8 y WHO-5, selects, ítem 21) con validación zod y completitud | Hecho |
+| WHO-5 y DASS-21 capturados como totales (como el mockup) | Hecho (ítems individuales pendientes) |
 | Motor de reglas R1–R5 + seguridad (con pruebas) | Hecho (umbrales por validar) |
 | Resultado: P(RA), confianza, Top 3 SHAP, reglas, acciones por ruta, disclaimer | Hecho (modelo simulado) |
 | Decisión humana (confirmar / rechazar / ajustar) | Hecho (local) |

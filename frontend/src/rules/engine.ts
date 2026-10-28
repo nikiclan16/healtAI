@@ -1,5 +1,5 @@
 import { RULES_CONFIG } from './config'
-import { dassLevel, dassScores, isAtLeast, who5Percent, who5Total } from './scoring'
+import { dassLevel, isAtLeast, who5Percent } from './scoring'
 import type { DassScale, RuleOutcome, RulesConfig, RulesInput, RulesResult } from './types'
 import { DASS_SCALES } from './types'
 
@@ -15,15 +15,15 @@ export const SCALE_LABEL: Record<DassScale, string> = {
  * Reemplazable por una llamada al motor_reglas.py del backend sin tocar las pantallas.
  */
 export function evaluateRules(input: RulesInput, cfg: RulesConfig = RULES_CONFIG): RulesResult {
-  const scores = dassScores(input.dassItems)
+  const scores = input.dass
   const levels = {
     depresion: dassLevel('depresion', scores.depresion, cfg.dassCuts),
     ansiedad: dassLevel('ansiedad', scores.ansiedad, cfg.dassCuts),
     estres: dassLevel('estres', scores.estres, cfg.dassCuts),
   }
-  const total = who5Total(input.who5Items)
+  const total = input.who5Total
   const pct = who5Percent(total)
-  const item21 = input.dassItems[20] ?? null
+  const item21 = input.item21
 
   // R1 — ítem 21 DASS-21 ≥ 2 o no evaluable
   const r1 = item21 === null || item21 >= cfg.r1.item21Min
@@ -73,14 +73,14 @@ export function evaluateRules(input: RulesInput, cfg: RulesConfig = RULES_CONFIG
   const seg = segLabels.length > 0
 
   const outcomes: RuleOutcome[] = [
-    { code: 'R1', name: 'Alerta de riesgo suicida (ítem 21 DASS-21)', triggered: r1, detail: r1Detail },
-    { code: 'R2', name: 'Subescala DASS-21 severa o extremadamente severa', triggered: severe.length > 0, detail: r2Detail },
-    { code: 'R3', name: 'Bienestar WHO-5 ≤ 28 % (probable depresión)', triggered: r3, detail: r3Detail },
-    { code: 'R4', name: 'Co-ocurrencia de malestar (≥ 2 subescalas moderadas)', triggered: r4, detail: r4Detail },
-    { code: 'R5', name: 'Marcadores de vulnerabilidad (≥ 3 de 4)', triggered: r5, detail: r5Detail },
+    { code: 'R1', name: 'Ítem 21 DASS-21 (Riesgo Suicida)', triggered: r1, detail: r1Detail },
+    { code: 'R2', name: 'Subescala Severa/Extrema', triggered: severe.length > 0, detail: r2Detail },
+    { code: 'R3', name: 'WHO-5 ≤ 28% (Probable Depresión)', triggered: r3, detail: r3Detail },
+    { code: 'R4', name: 'Co-ocurrencia de Malestar', triggered: r4, detail: r4Detail },
+    { code: 'R5', name: 'Marcadores de Vulnerabilidad Acumulada', triggered: r5, detail: r5Detail },
     {
       code: 'SEG',
-      name: 'Regla de seguridad (reporte del profesional)',
+      name: 'Seguridad (reporte del profesional)',
       triggered: seg,
       detail: seg ? `Reportado: ${segLabels.join(', ')}` : 'Sin alertas reportadas por el profesional',
     },

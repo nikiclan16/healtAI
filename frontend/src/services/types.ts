@@ -2,17 +2,20 @@ import type { RulesResult } from '@/rules'
 import type { ModelInput, ScreeningForm } from './contract'
 
 export type SiteCode = 'BAQ' | 'RHA' | 'VUP'
+/** Perfil de acceso (RBAC) — lo decide el servidor. */
 export type Role = 'evaluador' | 'investigador'
+/** Rol operativo que el usuario declara en el portal de acceso; el servidor lo valida. */
+export type Cargo = 'medico' | 'psicologo' | 'enfermeria' | 'investigador'
 export type RouteCode = 'A' | 'B'
 export type Confidence = 'Alta' | 'Media' | 'Baja'
 
 export interface UserProfile {
   id: string
   nombre: string
-  /** El rol lo asigna el servidor; nunca lo elige el usuario. */
+  /** Perfil RBAC confirmado por el servidor. */
   rol: Role
-  /** Cargo informativo (médico, psicólogo, enfermería…). */
-  cargo: string
+  /** Rol operativo con el que se ingresó. */
+  cargo: Cargo
 }
 
 export interface Session {
@@ -26,6 +29,7 @@ export interface Session {
 export interface LoginCredentials {
   usuario: string
   password: string
+  cargo: Cargo
   sede: SiteCode
 }
 
