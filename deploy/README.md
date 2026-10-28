@@ -18,6 +18,32 @@ No usa Docker: el backend corre con pm2 y el front es estático servido por ngin
 - PostgreSQL 12 o superior con `postgresql-contrib` (extensiones `pgcrypto` y `citext`). Probado en 12 y 16.
 - El DNS de `healtai.jmdatalabs.co` apuntando a la IP del servidor.
 
+## Servidor compartido: qué toca cada paso
+
+El servidor ya aloja otras aplicaciones. Esta instalación está pensada para no modificarlas:
+
+| Paso | Qué cambia | Qué NO toca |
+|---|---|---|
+| Python 3.12 con `uv` | Solo `~/.local` del usuario | Paquetes del sistema, `python3` (3.8) |
+| Base de datos | Una base y un rol **nuevos** | Las bases y roles existentes |
+| pm2 | Un proceso nuevo: `healthai-api` | Los otros procesos (no se usa `pm2 save`, `pm2 startup` ni `pm2 restart all`) |
+| nginx | Un archivo nuevo + `reload` (no `restart`) | Los otros sitios; `nginx -t` valida antes y, si falla, no se recarga |
+| certbot | El bloque de este dominio | Los demás certificados |
+| Front y backend | Carpetas propias `healtai` | Las carpetas de otras apps |
+
+Comprobaciones previas (solo leen, no cambian nada):
+
+```bash
+ss -ltnp | grep ':8010 ' || echo "puerto 8010 libre"
+sudo -u postgres psql -c '\l'
+sudo grep -rn "healthai" /etc/nginx/ || echo "sin choques de nombres en nginx"
+free -h
+pm2 list
+dig +short healtai.jmdatalabs.co
+```
+
+Si algo falla o se quiere deshacer todo: `pm2 delete healthai-api`, quitar el enlace de `sites-enabled` y `sudo systemctl reload nginx`, y borrar la base y el rol (`DROP DATABASE`, `DROP ROLE`) y las dos carpetas `healtai`.
+
 ## Primera vez
 
 **1. Clonar el repo**
@@ -30,14 +56,25 @@ cd healtai
 
 **2. Instalar Python 3.12 en paralelo** (una sola vez)
 
+Opción recomendada en un servidor compartido: `uv` instala Python solo en la carpeta del usuario, sin `sudo` ni `apt`.
+
 ```bash
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install python3.12 python3.12-venv
-python3.12 --version
+curl -LsSf https://astral.sh/uv/install.sh -o /tmp/uv-install.sh
 ```
 
-Si `apt` no encuentra `python3.12` para su versión de Ubuntu, avíseme: hay una alternativa sin `apt` (uv).
+```bash
+less /tmp/uv-install.sh        # revíselo si quiere; salga con q
+```
+
+```bash
+UV_NO_MODIFY_PATH=1 sh /tmp/uv-install.sh && ~/.local/bin/uv python install 3.12
+```
+
+```bash
+~/.local/bin/uv python find 3.12     # imprime la ruta del Python 3.12; se usa como PYTHON= en el paso 6
+```
+
+Alternativa con `apt` (añade un repositorio al sistema): `sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt update && sudo apt install python3.12 python3.12-venv`. No cambia `python3`, pero sí la lista de repositorios.
 
 **3. Crear la base de datos** (una sola vez; usa `sudo -u postgres`)
 
@@ -65,7 +102,7 @@ Sin ese archivo la API arranca, pero `/predecir` y `/evaluaciones` responden 503
 **6. Levantar el backend**
 
 ```bash
-PYTHON=python3.12 ./deploy/deploy-backend.sh
+PYTHON="$(~/.local/bin/uv python find 3.12)" ./deploy/deploy-backend.sh
 ```
 
 Crea el entorno virtual, instala dependencias, inicia `healthai-api` en pm2 (`127.0.0.1:8010`) y consulta `/salud`. Si el puerto 8010 estuviera ocupado (`ss -ltnp | grep 8010`), cambie `BACKEND_PORT` en `.env.production` **y** el `proxy_pass` del archivo de nginx.
@@ -73,9 +110,10 @@ Crea el entorno virtual, instala dependencias, inicia `healthai-api` en pm2 (`12
 **7. nginx y HTTPS**
 
 ```bash
+sudo cp -a /etc/nginx /etc/nginx.bak-$(date +%F)     # copia de seguridad, por si acaso
 sudo cp deploy/nginx/healtai.jmdatalabs.co.conf /etc/nginx/sites-available/healtai.jmdatalabs.co
 sudo ln -s /etc/nginx/sites-available/healtai.jmdatalabs.co /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx     # si nginx -t falla NO recargue: quite el enlace y avíseme
 sudo certbot --nginx -d healtai.jmdatalabs.co
 ```
 

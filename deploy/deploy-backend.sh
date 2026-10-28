@@ -20,8 +20,9 @@ PYTHON="${PYTHON:-python3}"
 backend/venv/bin/pip install --quiet --upgrade pip
 backend/venv/bin/pip install --quiet -r backend/requirements.txt
 
+# Solo afecta al proceso 'healthai-api'; no toca las demás apps ni la lista guardada de pm2.
 pm2 startOrReload deploy/ecosystem.config.cjs --update-env
-pm2 save
+echo "Revise 'pm2 list'. La primera vez, si todo está en orden, guarde la lista con: pm2 save"
 
 PORT="$(grep -E '^BACKEND_PORT=' .env.production | cut -d= -f2- || true)"
 sleep 4

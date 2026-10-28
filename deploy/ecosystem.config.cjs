@@ -1,5 +1,5 @@
 // pm2 para el backend de healthAI (FastAPI). Uso, desde la raíz del repo en el servidor:
-//   pm2 startOrReload deploy/ecosystem.config.cjs --update-env && pm2 save
+//   pm2 startOrReload deploy/ecosystem.config.cjs --update-env     (solo afecta a 'healthai-api')
 //
 // El backend solo lee variables de entorno (no el archivo .env): aquí se cargan desde
 // .env.production, en la raíz del repo, que NO está en git (ver deploy/env.production.example).
