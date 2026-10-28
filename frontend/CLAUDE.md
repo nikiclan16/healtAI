@@ -24,6 +24,8 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 
 7. **El modo `mock` es solo para desarrollo.** `config/app.ts` lo desactiva en producción (`import.meta.env.DEV`) y `services/index.ts` enlaza los mocks únicamente en desarrollo, de modo que ni los servicios simulados ni los usuarios de prueba entran al paquete desplegado. No volver a exponer el modo demo en producción.
 
+8. **Contraseña temporal.** Si `session.debeCambiarPassword` es true, `RequireAuth` solo deja entrar a `/cambiar-password`; el servidor además rechaza (403) toda operación hasta que se cambie. No quitar ninguna de las dos barreras.
+
 ## Arquitectura
 
 - `src/services/` — **las pantallas nunca usan `fetch`**; importan `services` de `@/services`.
@@ -33,7 +35,8 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
   - La confianza puede ser `null` (modelos retadores sin conectar) y `modeloPlaceholder` indica que el backend usa el modelo de prueba: la UI debe mostrarlo.
 - `src/rules/` — motor R1–R5 + seguridad: funciones puras con pruebas. **Solo lo usa el modo mock de desarrollo**; en producción las reglas las ejecuta el backend (`backend/app/reglas/motor_reglas.py`). Mantener ambos en sincronía.
 - `src/services/contract.ts` — esquema zod = única fuente de validación de rangos.
-- `src/features/<módulo>/` — auth, screening, results, decision, dashboard, investigator, **admin** (URL `/admin`, sin modo mock: siempre usa el backend; sesión y token propios).
+- `services.batch` (carga por lotes, RF03.2) y `services.investigator` (panel del investigador) **no tienen versión simulada**: siempre usan el backend.
+- `src/features/<módulo>/` — auth, screening, results, decision, dashboard, **integration** (RF03: API en tiempo real y lotes), **investigator** (métricas y exportaciones), **admin** (URL `/admin`, sin modo mock: siempre usa el backend; sesión y token propios).
 - `src/components/` — Layout, Disclaimer, VersionBadge, ui.
 
 ## Convenciones

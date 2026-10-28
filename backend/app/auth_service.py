@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from . import audit
 from .config import get_settings
-from .security import dummy_verify, verify_password
+from .security import dummy_verify, hash_password, verify_password
 
 BAD_CREDENTIALS = "Usuario o contraseña incorrectos"
 
@@ -20,7 +20,7 @@ def authenticate(db: Session, usuario: str, password: str) -> dict:
     row = (
         db.execute(
             text(
-                "SELECT id, email, nombre, rol, activo, password_hash, failed_logins, "
+                "SELECT id, email, nombre, rol, activo, debe_cambiar_password, password_hash, failed_logins, "
                 "(locked_until IS NOT NULL AND locked_until > now()) AS bloqueado "
                 "FROM users WHERE email = :email"
             ),
@@ -68,3 +68,19 @@ def authenticate(db: Session, usuario: str, password: str) -> dict:
         {"id": row["id"]},
     )
     return dict(row)
+
+
+def cambiar_password(db: Session, user: dict, actual: str, nueva: str) -> None:
+    """Cambio de contraseña por el propio usuario: exige la actual y rechaza reutilizarla."""
+    row = db.execute(text("SELECT password_hash FROM users WHERE id = :id"), {"id": user["id"]}).mappings().one()
+    if not verify_password(actual, row["password_hash"]):
+        audit.log(db, "cambio_password_fallido", user_id=user["id"])
+        db.commit()
+        raise HTTPException(400, "La contraseña actual no es correcta")
+    if verify_password(nueva, row["password_hash"]):
+        raise HTTPException(400, "La nueva contraseña debe ser distinta de la actual")
+    db.execute(
+        text("UPDATE users SET password_hash = :h, debe_cambiar_password = FALSE WHERE id = :id"),
+        {"h": hash_password(nueva), "id": user["id"]},
+    )
+    audit.log(db, "cambio_password", user_id=user["id"])

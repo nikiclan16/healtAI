@@ -32,4 +32,8 @@ export const mockAuthService: AuthService = {
   async logout() {
     await delay(50)
   },
+  async changePassword(actual) {
+    await delay(200)
+    if (!MOCK_USERS.some((u) => u.password === actual)) throw new ApiError('La contraseña actual no es correcta', 400)
+  },
 }

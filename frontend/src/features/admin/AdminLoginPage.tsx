@@ -36,8 +36,13 @@ export function AdminLoginPage() {
     setError(null)
     try {
       const r = await adminApi.login(values.usuario, values.password)
-      setSession({ token: r.access_token, expiresAt: Date.now() + r.expires_in * 1000, user: r.usuario })
-      navigate('/admin', { replace: true })
+      setSession({
+        token: r.access_token,
+        expiresAt: Date.now() + r.expires_in * 1000,
+        user: r.usuario,
+        debeCambiarPassword: r.debe_cambiar_password ?? false,
+      })
+      navigate(r.debe_cambiar_password ? '/admin/password' : '/admin', { replace: true })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No fue posible iniciar sesión')
     }

@@ -26,7 +26,7 @@ def test_login_ok_devuelve_token_y_rol_operativo(client, db):
     assert data["usuario"]["rol"] == "evaluador"
     assert data["usuario"]["cargo"] == "medico"
     assert data["usuario"]["cargo_label"] == "Médico de Atención Primaria"
-    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'login'") == 1
+    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'login' AND user_id = (SELECT id FROM users WHERE email = :e)", e=EMAIL) == 1
 
 
 def test_login_es_insensible_a_mayusculas_en_el_correo(client, db):
@@ -39,7 +39,7 @@ def test_contrasena_incorrecta_cuenta_el_intento_y_audita(client, db):
     res = login(client, password="otra-clave-1")
     assert res.status_code == 401
     assert scalar(db, "SELECT failed_logins FROM users WHERE email = :e", e=EMAIL) == 1
-    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'login_fallido'") == 1
+    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'login_fallido' AND user_id = (SELECT id FROM users WHERE email = :e)", e=EMAIL) == 1
 
 
 def test_usuario_inexistente_da_el_mismo_error_que_contrasena_incorrecta(client, db):
@@ -56,7 +56,7 @@ def test_bloqueo_tras_cinco_intentos_fallidos(client, db):
         assert login(client, password="otra-clave-1").status_code == 401
     # Con la contraseña correcta sigue bloqueado.
     assert login(client).status_code == 423
-    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'cuenta_bloqueada'") == 1
+    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'cuenta_bloqueada' AND user_id = (SELECT id FROM users WHERE email = :e)", e=EMAIL) == 1
 
 
 def test_rol_operativo_no_asignado_es_rechazado_por_el_servidor(client, db):

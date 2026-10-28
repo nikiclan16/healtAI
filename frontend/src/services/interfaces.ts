@@ -1,5 +1,15 @@
 import type { ScreeningForm } from './contract'
-import type { Decision, Evaluation, HealthStatus, LoginCredentials, Session } from './types'
+import type {
+  BatchResult,
+  Decision,
+  DownloadedFile,
+  Evaluation,
+  HealthStatus,
+  InvestigatorMetrics,
+  LoginCredentials,
+  PredictResponse,
+  Session,
+} from './types'
 
 /** Errores de la API. */
 export class ApiError extends Error {
@@ -31,11 +41,15 @@ export interface AuthService {
   listCargos(): Promise<CargoOption[]>
   login(credentials: LoginCredentials): Promise<Session>
   logout(): Promise<void>
+  /** El propio usuario cambia su contraseña (obligatorio si la actual es temporal). */
+  changePassword(actual: string, nueva: string): Promise<void>
 }
 
 export interface ModelService {
   /** GET /salud */
   health(): Promise<HealthStatus>
+  /** POST /predecir (RF03.1): inferencia pura, sin reglas ni registro. */
+  predict(form: ScreeningForm): Promise<PredictResponse>
 }
 
 export interface EvaluationService {
@@ -49,8 +63,25 @@ export interface EvaluationService {
   recordDecision(id: string, decision: Decision): Promise<Evaluation>
 }
 
+/** Procesamiento por lotes (RF03.2). Requiere el backend: no tiene modo simulado. */
+export interface BatchService {
+  /** POST /lotes con un archivo CSV/XLSX. */
+  upload(file: File): Promise<BatchResult>
+  /** Plantilla CSV con las columnas del diccionario. */
+  template(): Promise<DownloadedFile>
+}
+
+/** Panel del investigador (solo lectura). Requiere el backend: no tiene modo simulado. */
+export interface InvestigatorService {
+  metrics(): Promise<InvestigatorMetrics>
+  exportEvaluations(): Promise<DownloadedFile>
+  exportAudit(): Promise<DownloadedFile>
+}
+
 export interface Services {
   auth: AuthService
   model: ModelService
   evaluations: EvaluationService
+  batch: BatchService
+  investigator: InvestigatorService
 }

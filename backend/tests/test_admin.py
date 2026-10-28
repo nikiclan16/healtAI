@@ -85,7 +85,7 @@ def test_crear_usuario_y_que_pueda_ingresar_con_su_rol_y_sede(client, db, admin_
     data = res.json()
     assert data["email"] == "nuevo@prueba.com"
     assert data["cargos"] == ["psicologo"] and data["sedes"] == ["BAQ", "VUP"]
-    assert "password" not in str(data).lower()
+    assert "password" not in data and "password_hash" not in data
 
     stored = scalar(db, "SELECT password_hash FROM users WHERE email = 'nuevo@prueba.com'")
     assert stored.startswith("$2b$") and NEW_USER["password"] not in stored

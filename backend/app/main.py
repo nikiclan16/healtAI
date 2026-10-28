@@ -11,7 +11,7 @@ from .bootstrap import ensure_admin
 from .config import get_settings
 from .db import get_db
 from .modelo.registro import cargar as cargar_modelo
-from .routers import admin, auth, evaluaciones
+from .routers import admin, auth, evaluaciones, investigador, lotes
 
 
 @asynccontextmanager
@@ -21,7 +21,15 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="healthAI API", version=APP_VERSION, lifespan=lifespan)
+_docs = get_settings().enable_docs
+app = FastAPI(
+    title="healthAI API",
+    version=APP_VERSION,
+    lifespan=lifespan,
+    docs_url="/docs" if _docs else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if _docs else None,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,8 +40,11 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.login_router)
+app.include_router(admin.cuenta_router)
 app.include_router(admin.router)
 app.include_router(evaluaciones.router)
+app.include_router(lotes.router)
+app.include_router(investigador.router)
 
 
 @app.get("/salud", tags=["salud"])

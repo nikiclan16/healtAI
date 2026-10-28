@@ -7,6 +7,7 @@ import { httpJson } from './client'
 const LoginResponse = z.object({
   access_token: z.string(),
   expires_in: z.number().optional(),
+  debe_cambiar_password: z.boolean().optional(),
   usuario: z.object({
     id: z.string(),
     nombre: z.string(),
@@ -38,9 +39,13 @@ export const httpAuthService: AuthService = {
         cargoLabel: r.usuario.cargo_label ?? undefined,
       },
       sede,
+      debeCambiarPassword: r.debe_cambiar_password ?? false,
     }
   },
   async logout() {
     // El JWT es stateless; si el backend añade revocación, llamarla aquí.
+  },
+  async changePassword(actual, nueva) {
+    await httpJson('/auth/cambiar-password', { method: 'POST', body: { actual, nueva } })
   },
 }

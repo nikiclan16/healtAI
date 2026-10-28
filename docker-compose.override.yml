@@ -1,0 +1,11 @@
+# SOLO DESARROLLO — Compose lo carga automáticamente junto con docker-compose.yml.
+# En producción NO se usa: ejecute `docker compose -f docker-compose.yml ...` (ver DEPLOY.md).
+services:
+  db:
+    volumes:
+      # Usuarios de demostración (evaluador@, psicologa@, investigador@cuc.test). Nunca con datos reales.
+      - ./infra/db/seed/dev_seed.sql:/docker-entrypoint-initdb.d/02_dev_seed.sql:ro
+
+  backend:
+    environment:
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}

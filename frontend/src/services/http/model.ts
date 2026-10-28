@@ -1,4 +1,5 @@
 import type { ModelService } from '../interfaces'
+import type { PredictResponse } from '../types'
 import { httpJson } from './client'
 
 interface SaludResponse {
@@ -25,5 +26,8 @@ export const httpModelService: ModelService = {
     } catch (e) {
       return { ok: false, detalle: e instanceof Error ? e.message : 'Servicio no disponible' }
     }
+  },
+  async predict(form) {
+    return (await httpJson('/predecir', { method: 'POST', body: form })) as PredictResponse
   },
 }

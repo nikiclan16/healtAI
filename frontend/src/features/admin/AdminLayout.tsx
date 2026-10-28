@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { CONVENIO } from '@/config/app'
 import { Icon } from '@/components/ui'
 import { VersionBadge } from '@/components/VersionBadge'
@@ -41,6 +41,7 @@ export function AdminLayout() {
                 <div className="font-semibold">{session.user.nombre}</div>
                 <div className="text-slate-300">Administrador</div>
               </div>
+              <Link to="/admin/password" className="font-semibold text-slate-300 hover:text-white">Contraseña</Link>
               <button
                 onClick={() => {
                   clear()
@@ -71,6 +72,11 @@ export function AdminLayout() {
 /** Solo deja pasar con una sesión de administración vigente. */
 export function RequireAdmin() {
   const session = useAdminStore((s) => s.session)
+  const location = useLocation()
   if (!isAdminSessionValid(session)) return <Navigate to="/admin/login" replace />
+  // Con contraseña temporal solo se puede cambiarla.
+  if (session.debeCambiarPassword && location.pathname !== '/admin/password') {
+    return <Navigate to="/admin/password" replace />
+  }
   return <Outlet />
 }

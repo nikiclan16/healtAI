@@ -13,6 +13,7 @@ export interface AdminUser {
   rol: Perfil
   activo: boolean
   bloqueado: boolean
+  debe_cambiar_password: boolean
   cargos: string[]
   sedes: string[]
   created_at: string
@@ -54,6 +55,7 @@ export interface UserChanges {
 interface AdminLoginResponse {
   access_token: string
   expires_in: number
+  debe_cambiar_password?: boolean
   usuario: { id: string; nombre: string }
 }
 
@@ -88,6 +90,8 @@ async function request<T>(path: string, init: { method?: string; body?: unknown;
 export const adminApi = {
   login: (usuario: string, password: string) =>
     request<AdminLoginResponse>('/admin/auth/login', { method: 'POST', auth: false, body: { usuario, password } }),
+  changePassword: (actual: string, nueva: string) =>
+    request<null>('/admin/cuenta/password', { method: 'POST', body: { actual, nueva } }),
   sedes: () => request<AdminSite[]>('/admin/sedes'),
   roles: () => request<AdminRole[]>('/admin/roles'),
   createRole: (body: { label: string; rol: PerfilCargo }) => request<AdminRole>('/admin/roles', { method: 'POST', body }),

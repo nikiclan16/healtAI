@@ -1,7 +1,9 @@
-# healthAI · entorno de desarrollo
-# Uso:   docker compose up -d --build        (base de datos + API en http://127.0.0.1:8000)
+# healthAI · configuración base (apta para producción: sin datos de demostración ni documentación abierta).
+#
+# Desarrollo:  docker compose up -d --build
+#   (Compose carga también docker-compose.override.yml: usuarios de demostración y /docs)
+# Producción:  docker compose -f docker-compose.yml up -d --build   (ver DEPLOY.md)
 # Pruebas del backend: docker compose run --rm --build backend pytest
-# Pendiente de añadir: frontend.
 name: healthai
 
 services:
@@ -19,8 +21,6 @@ services:
       - pgdata:/var/lib/postgresql/data
       # Los scripts se ejecutan en orden alfabético solo al crear el volumen.
       - ./infra/db/init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      # SOLO DESARROLLO: sedes y usuarios de demostración. Quitar en entornos con datos reales.
-      - ./infra/db/seed/dev_seed.sql:/docker-entrypoint-initdb.d/02_dev_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -41,6 +41,8 @@ services:
       # El de prueba (placeholder) solo se carga si ALLOW_PLACEHOLDER_MODEL=true (solo desarrollo).
       MODEL_ARTIFACT_PATH: ${MODEL_ARTIFACT_PATH:-model_artifacts/model.json}
       ALLOW_PLACEHOLDER_MODEL: ${ALLOW_PLACEHOLDER_MODEL:-false}
+      # Documentación interactiva (/docs): solo desarrollo.
+      ENABLE_DOCS: ${ENABLE_DOCS:-false}
       # Administrador inicial (solo se crea si no existe ningún admin activo).
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}

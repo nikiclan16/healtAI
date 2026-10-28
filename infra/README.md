@@ -55,3 +55,7 @@ Garantías que impone la propia base de datos:
 - Rol de base de datos con permisos mínimos para el backend (hoy usa el superusuario de desarrollo).
 - Contenedor del frontend en el compose.
 - Migraciones (Alembic) y copias de seguridad.
+
+## Migraciones
+
+`init/01_schema.sql` solo corre al crear el volumen. Los cambios posteriores del esquema van como scripts numerados en `migrations/` (p. ej. `002_debe_cambiar_password.sql`, ya incluido en el esquema inicial) y se aplican a las bases existentes; ver [`../DEPLOY.md`](../DEPLOY.md).

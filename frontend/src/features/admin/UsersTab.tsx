@@ -214,6 +214,7 @@ export function UsersTab({ roles, sites }: { roles: AdminRole[]; sites: AdminSit
                 <td className="px-4 py-2 font-mono">{u.sedes.length ? u.sedes.join(', ') : <span className="text-slate-400">—</span>}</td>
                 <td className="px-4 py-2">
                   {u.bloqueado ? <Badge tone="danger">Bloqueado</Badge> : <Badge tone={u.activo ? 'ok' : 'neutral'}>{u.activo ? 'Activo' : 'Desactivado'}</Badge>}
+                  {u.debe_cambiar_password && <span className="ml-1"><Badge tone="warn">Contraseña temporal</Badge></span>}
                 </td>
                 <td className="space-x-3 px-4 py-2 text-right whitespace-nowrap">
                   <button type="button" className="font-semibold text-cuc-blue hover:underline" onClick={() => startEdit(u)}>Editar</button>

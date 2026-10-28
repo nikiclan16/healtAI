@@ -57,7 +57,14 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
+    # True si la contraseña es temporal (fijada por un administrador) y debe cambiarse antes de operar.
+    debe_cambiar_password: bool = False
     usuario: UsuarioSesion
+
+
+class CambiarPasswordIn(BaseModel):
+    actual: str = Field(max_length=200)
+    nueva: Password
 
 
 class CargoPublico(BaseModel):
@@ -117,6 +124,7 @@ class UsuarioOut(BaseModel):
     rol: Perfil
     activo: bool
     bloqueado: bool
+    debe_cambiar_password: bool
     cargos: list[str]
     sedes: list[str]
     created_at: datetime

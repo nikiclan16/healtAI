@@ -170,7 +170,7 @@ def test_confirmar_la_ruta_sugerida(client, db):
     d = res.json()["decision"]
     assert d["accion"] == "confirmar" and d["rutaFinal"] == "A" and d["profesionalId"] == ev["profesional"]["id"]
     assert client.get(f"/evaluaciones/{ev['id']}", headers=h).json()["decision"]["rutaFinal"] == "A"
-    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'decision'") == 1
+    assert scalar(db, "SELECT count(*) FROM audit_log WHERE evento = 'decision' AND evaluation_id = :i", i=ev["id"]) == 1
 
 
 def test_solo_una_decision_por_evaluacion(client, db):

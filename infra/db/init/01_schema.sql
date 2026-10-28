@@ -32,6 +32,7 @@ CREATE TABLE users (
     -- Perfil RBAC. "admin" gestiona usuarios y roles; no opera pacientes.
     rol               TEXT NOT NULL CHECK (rol IN ('evaluador', 'investigador', 'admin')),
     activo            BOOLEAN NOT NULL DEFAULT TRUE,
+    debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE,  -- contraseña temporal fijada por un admin
     failed_logins     INT NOT NULL DEFAULT 0,           -- intentos fallidos consecutivos
     locked_until      TIMESTAMPTZ,                      -- bloqueo temporal por intentos fallidos
     last_login_at     TIMESTAMPTZ,

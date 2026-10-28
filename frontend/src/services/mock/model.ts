@@ -1,5 +1,5 @@
 import { MODEL_VERSION } from '@/config/app'
-import type { ModelInput } from '../contract'
+import { buildModelInput, type ModelInput } from '../contract'
 import type { ModelService } from '../interfaces'
 import type { Confidence, PredictResponse, ShapFactor } from '../types'
 import { delay } from './auth'
@@ -95,4 +95,5 @@ export const mockModelService: ModelService = {
     await delay(150)
     return { ok: true, versionModelo: MODEL_VERSION, detalle: 'Modelo simulado (modo demo)' }
   },
+  predict: (form) => mockPredict(buildModelInput(form)),
 }

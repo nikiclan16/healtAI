@@ -27,6 +27,8 @@ export interface Session {
   expiresAt: number
   user: UserProfile
   sede: SiteCode
+  /** La contraseña es temporal (fijada por un administrador): debe cambiarse antes de operar. */
+  debeCambiarPassword?: boolean
 }
 
 export interface LoginCredentials {
@@ -97,3 +99,72 @@ export interface Evaluation {
   decision?: Decision
 }
 
+
+/** Una fila del procesamiento por lotes (RF03.2). */
+export interface BatchRow {
+  /** Número de fila en el archivo (la cabecera es la 1). */
+  fila: number
+  ok: boolean
+  error?: string
+  probabilidadRA?: number
+  rutaBase?: RouteCode
+  rutaSistema?: RouteCode
+  escalada?: boolean
+  reglas?: string[]
+  shapTop3?: ShapFactor[]
+}
+
+export interface BatchResult {
+  archivo: string
+  /** Huella SHA-256 del archivo recibido (integridad). */
+  sha256: string
+  columnas: string[]
+  resumen: {
+    filas: number
+    procesadas: number
+    conError: number
+    baseRA: number
+    baseRB: number
+    escaladas: number
+    finalA: number
+    finalB: number
+  }
+  versiones: { app: string; modelo: string; diccionario: string }
+  modeloPlaceholder: boolean
+  resultados: BatchRow[]
+}
+
+export interface SiteMetrics {
+  sede: SiteCode
+  nombre: string
+  evaluaciones: number
+  rutaA: number
+  escaladas: number
+  decisiones: number
+  /** Proporción de decisiones que coinciden con la ruta del sistema; null sin decisiones. */
+  concordancia: number | null
+}
+
+/** Métricas agregadas del panel del investigador (GET /investigador/metricas). */
+export interface InvestigatorMetrics {
+  totales: {
+    evaluaciones: number
+    decisiones: number
+    pendientes: number
+    rutaA: number
+    escaladas: number
+    concordancia: number | null
+  }
+  sedes: SiteMetrics[]
+  acciones: Partial<Record<DecisionAction, number>>
+  reglas: Record<string, number>
+  conceptDrift: { ventana: number; decisiones: number; concordancia: number | null }
+  dataDrift: { disponible: boolean; motivo?: string }
+  auditoria: { eventos: number; integra: boolean; primerRegistroAlterado: number | null }
+}
+
+/** Archivo descargado de la API. */
+export interface DownloadedFile {
+  blob: Blob
+  filename: string
+}

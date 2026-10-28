@@ -3,10 +3,11 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .. import audit
-from ..auth_service import authenticate
+from ..auth_service import authenticate, cambiar_password
 from ..config import get_settings
 from ..db import get_db
-from ..schemas import CargoPublico, LoginIn, TokenOut, UsuarioSesion
+from ..deps import current_clinical_any
+from ..schemas import CambiarPasswordIn, CargoPublico, LoginIn, TokenOut, UsuarioSesion
 from ..security import AUD_APP, create_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -61,7 +62,14 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     return TokenOut(
         access_token=token,
         expires_in=expires_in,
+        debe_cambiar_password=user["debe_cambiar_password"],
         usuario=UsuarioSesion(
             id=user["id"], nombre=user["nombre"], rol=user["rol"], cargo=cargo["code"], cargo_label=cargo["label"]
         ),
     )
+
+
+@router.post("/cambiar-password", status_code=204)
+def cambiar_mi_password(body: CambiarPasswordIn, user: dict = Depends(current_clinical_any), db: Session = Depends(get_db)):
+    """El usuario cambia su propia contraseña (obligatorio si la actual es temporal)."""
+    cambiar_password(db, user, body.actual, body.nueva)

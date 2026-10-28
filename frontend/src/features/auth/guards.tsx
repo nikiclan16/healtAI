@@ -2,12 +2,15 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import type { Role } from '@/services/types'
 import { isSessionValid, useAuthStore } from './authStore'
 
-/** Sin sesión vigente no se accede a nada. */
+/** Sin sesión vigente no se accede a nada; con contraseña temporal solo se puede cambiarla. */
 export function RequireAuth() {
   const session = useAuthStore((s) => s.session)
   const location = useLocation()
   if (!isSessionValid(session)) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+  if (session.debeCambiarPassword && location.pathname !== '/cambiar-password') {
+    return <Navigate to="/cambiar-password" replace />
   }
   return <Outlet />
 }

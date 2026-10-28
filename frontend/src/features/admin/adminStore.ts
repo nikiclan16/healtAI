@@ -6,11 +6,14 @@ export interface AdminSession {
   /** Epoch en ms. */
   expiresAt: number
   user: { id: string; nombre: string }
+  /** Contraseña temporal: debe cambiarse antes de administrar. */
+  debeCambiarPassword?: boolean
 }
 
 interface AdminState {
   session: AdminSession | null
   setSession: (session: AdminSession) => void
+  passwordChanged: () => void
   clear: () => void
 }
 
@@ -20,6 +23,8 @@ export const useAdminStore = create<AdminState>()(
     (set) => ({
       session: null,
       setSession: (session) => set({ session }),
+      passwordChanged: () =>
+        set((s) => (s.session ? { session: { ...s.session, debeCambiarPassword: false } } : s)),
       clear: () => set({ session: null }),
     }),
     { name: 'healthai.admin-session', storage: createJSONStorage(() => sessionStorage) },

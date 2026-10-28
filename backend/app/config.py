@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     dictionary_version: str = "v2.1"
 
+    # Documentación interactiva (/docs, /openapi.json). Desactivada por defecto: solo desarrollo.
+    enable_docs: bool = False
+
     cors_origins: str ="http://localhost:5173,http://localhost:5174"
 
     # Administrador inicial: se crea al arrancar solo si no existe ningún admin activo.

@@ -6,12 +6,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import audit
-from ..auth_service import authenticate
+from ..auth_service import authenticate, cambiar_password
 from ..config import get_settings
 from ..db import get_db
-from ..deps import current_admin
+from ..deps import current_admin, current_admin_any
 from ..schemas import (
     AdminLoginIn,
+    CambiarPasswordIn,
     CargoIn,
     CargoOut,
     CargoPatch,
@@ -27,6 +28,8 @@ from ..util import CARGO_CODE_RE, slugify_code
 
 # Login de administración: sin dependencia de sesión.
 login_router = APIRouter(prefix="/admin/auth", tags=["admin"])
+# Cuenta propia del administrador: también accesible mientras tenga una contraseña temporal pendiente.
+cuenta_router = APIRouter(prefix="/admin/cuenta", tags=["admin"])
 # Todo lo demás exige un administrador autenticado.
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(current_admin)])
 
@@ -43,8 +46,14 @@ def admin_login(body: AdminLoginIn, db: Session = Depends(get_db)):
     return TokenOut(
         access_token=token,
         expires_in=expires_in,
+        debe_cambiar_password=user["debe_cambiar_password"],
         usuario=UsuarioSesion(id=user["id"], nombre=user["nombre"], rol="admin"),
     )
+
+
+@cuenta_router.post("/password", status_code=204)
+def cambiar_mi_password(body: CambiarPasswordIn, admin: dict = Depends(current_admin_any), db: Session = Depends(get_db)):
+    cambiar_password(db, admin, body.actual, body.nueva)
 
 
 # ── Sedes ───────────────────────────────────────────────────────────────────────
@@ -99,7 +108,7 @@ def actualizar_rol(code: str, body: CargoPatch, admin: dict = Depends(current_ad
 # ── Usuarios ────────────────────────────────────────────────────────────────────
 
 _USER_SELECT = """
-SELECT u.id, u.email, u.nombre, u.rol, u.activo, u.created_at, u.last_login_at,
+SELECT u.id, u.email, u.nombre, u.rol, u.activo, u.created_at, u.last_login_at, u.debe_cambiar_password,
        (u.locked_until IS NOT NULL AND u.locked_until > now()) AS bloqueado,
        COALESCE((SELECT array_agg(cargo ORDER BY cargo) FROM user_cargos WHERE user_id = u.id), ARRAY[]::text[]) AS cargos,
        COALESCE((SELECT array_agg(site_code ORDER BY site_code) FROM user_sites WHERE user_id = u.id), ARRAY[]::text[]) AS sedes
@@ -170,7 +179,10 @@ def crear_usuario(body: UsuarioIn, admin: dict = Depends(current_admin), db: Ses
         raise HTTPException(409, "Ya existe un usuario con ese correo")
     try:
         user_id = db.execute(
-            text("INSERT INTO users (email, password_hash, nombre, rol) VALUES (:e, :h, :n, :r) RETURNING id"),
+            text(
+                "INSERT INTO users (email, password_hash, nombre, rol, debe_cambiar_password) "
+                "VALUES (:e, :h, :n, :r, TRUE) RETURNING id"
+            ),
             {"e": body.email, "h": hash_password(body.password), "n": body.nombre, "r": body.rol},
         ).scalar_one()
         _replace_assignments(db, user_id, body.cargos, body.sedes)
@@ -211,7 +223,8 @@ def actualizar_usuario(
     if body.password is not None:
         # Restablecer la contraseña también levanta cualquier bloqueo.
         db.execute(
-            text("UPDATE users SET password_hash = :h, failed_logins = 0, locked_until = NULL WHERE id = :id"),
+            text("UPDATE users SET password_hash = :h, failed_logins = 0, locked_until = NULL, "
+                "debe_cambiar_password = TRUE WHERE id = :id"),
             {"h": hash_password(body.password), "id": user_id},
         )
         changed.append("password")

@@ -60,12 +60,14 @@ export function Layout() {
               <nav className="flex items-center gap-1" aria-label="Principal">
                 <NavLink to="/" end className={navClass}>Inicio</NavLink>
                 {session.user.rol === 'evaluador' && <NavLink to="/evaluacion/nueva" className={navClass}>Nueva evaluación</NavLink>}
+                <NavLink to="/integracion" className={navClass}>API y lotes</NavLink>
                 {session.user.rol === 'investigador' && <NavLink to="/investigador" className={navClass}>Panel investigador</NavLink>}
               </nav>
               <div className="text-right text-xs">
                 <div className="font-semibold">{session.user.nombre}</div>
                 <div className="text-slate-300">{session.user.cargoLabel ?? session.user.cargo}</div>
               </div>
+              <Link to="/cambiar-password" className="text-xs font-semibold text-slate-300 hover:text-white">Contraseña</Link>
               <button onClick={logout} className="rounded-md border border-white/30 px-3 py-1.5 text-xs font-semibold hover:bg-white/10">
                 Salir
               </button>
