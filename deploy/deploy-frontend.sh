@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DOMAIN="${DOMAIN:-healtai.jmdatalabs.co}"
-REMOTE_DIR="${REMOTE_DIR:-/home/gestionacademicasoft/apps/frontend/healthai}"
+REMOTE_DIR="${REMOTE_DIR:-/home/gestionacademicasoft/apps/frontend/healtai}"
 
 cd frontend
 npm ci
@@ -19,5 +19,8 @@ if [ -z "${SERVER:-}" ]; then
 fi
 
 case "$REMOTE_DIR" in /home/*/apps/frontend/*) ;; *) echo "REMOTE_DIR inesperado: $REMOTE_DIR" >&2; exit 1 ;; esac
-tar -C dist -cf - . | ssh "$SERVER" "mkdir -p '$REMOTE_DIR' && find '$REMOTE_DIR' -mindepth 1 -delete && tar -C '$REMOTE_DIR' -xf -"
+# Nunca vaciar una carpeta que contenga el repo o código del backend (nginx serviría su contenido).
+tar -C dist -cf - . | ssh "$SERVER" "mkdir -p '$REMOTE_DIR' \
+  && { [ ! -e '$REMOTE_DIR/.git' ] && [ ! -d '$REMOTE_DIR/backend' ] || { echo 'Ese directorio contiene el repo/backend: use una carpeta solo para el front' >&2; exit 1; }; } \
+  && find '$REMOTE_DIR' -mindepth 1 -delete && tar -C '$REMOTE_DIR' -xf -"
 echo "Front publicado en ${REMOTE_DIR} → https://${DOMAIN}"

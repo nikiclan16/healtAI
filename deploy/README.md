@@ -5,9 +5,11 @@ No usa Docker: el backend corre con pm2 y el front es estático servido por ngin
 
 ```
 /home/gestionacademicasoft/apps/
-├── backend/healthai/     ← el repo clonado (pm2 corre backend/ desde aquí)
-└── frontend/healthai/    ← solo el contenido de frontend/dist (nginx)
+├── backend/healtai/      ← el repo clonado (pm2 corre backend/ desde aquí)
+└── frontend/healtai/     ← solo el contenido de frontend/dist (nginx)
 ```
+
+> **Importante:** no clone el repo dentro de la carpeta del front. nginx sirve esa carpeta completa como sitio público y expondría el código y `.env.production`. El repo va en `apps/backend/healtai`; en `apps/frontend/healtai` solo van los archivos compilados.
 
 ## Requisitos del servidor
 
@@ -22,8 +24,8 @@ No usa Docker: el backend corre con pm2 y el front es estático servido por ngin
 
 ```bash
 cd /home/gestionacademicasoft/apps/backend
-git clone https://github.com/nikiclan16/healtAI.git healthai
-cd healthai
+git clone https://github.com/nikiclan16/healtAI.git healtai
+cd healtai
 ```
 
 **2. Crear la base de datos** (una sola vez; usa `sudo -u postgres`)
@@ -44,7 +46,7 @@ nano .env.production      # DATABASE_URL, SECRET_KEY (openssl rand -hex 32), ADM
 
 ```bash
 # desde su PC
-scp model.json usuario@servidor:/home/gestionacademicasoft/apps/backend/healthai/backend/model_artifacts/model.json
+scp model.json usuario@servidor:/home/gestionacademicasoft/apps/backend/healtai/backend/model_artifacts/model.json
 ```
 
 Sin ese archivo la API arranca, pero `/predecir` y `/evaluaciones` responden 503 y `/api/salud` dice `degradado`. Es a propósito: nunca inventa una predicción.
@@ -74,7 +76,7 @@ El archivo ya limita los intentos de ingreso por IP (10 por minuto, responde 429
 SERVER=usuario@IP_DEL_SERVIDOR ./deploy/deploy-frontend.sh
 ```
 
-Compila con `VITE_API_BASE_URL=https://healtai.jmdatalabs.co/api` y sube `dist/` a `apps/frontend/healthai`. Si prefiere subirlo a mano, ejecute el script sin `SERVER` y copie el contenido de `frontend/dist/`.
+Compila con `VITE_API_BASE_URL=https://healtai.jmdatalabs.co/api` y sube `dist/` a `apps/frontend/healtai`. Si prefiere subirlo a mano, ejecute el script sin `SERVER` y copie el contenido de `frontend/dist/`.
 
 **8. Verificar**
 
