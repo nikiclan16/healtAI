@@ -15,7 +15,7 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 
 ## Reglas no negociables (seguridad clínica)
 
-1. `nivel_riesgo_amputacion` (ADA/IWGDF) **nunca** se envía al modelo. Solo `buildModelInput()` en `src/services/contract.ts` arma la entrada del modelo; no construir payloads a mano.
+1. El nivel de riesgo de amputación (ADA/IWGDF) **no se captura en el formulario** (el mockup no lo trae) y **nunca** se envía al modelo. Solo `buildModelInput()` en `src/services/contract.ts` arma la entrada del modelo; no construir payloads a mano.
 2. El `<Disclaimer />` debe verse en toda pantalla autenticada y en el PDF (RF05.3). No quitarlo del `Layout`.
 3. La regla de seguridad (`SEG`) fuerza Ruta A y no se puede degradar a B desde la UI (`DecisionPanel`).
 4. Sin datos reales de pacientes. El formulario NO captura ningún identificador: el código seudonimizado (`PAC-AAAA-NNNN`) lo genera el sistema al guardar (en modo `http`, el servidor).

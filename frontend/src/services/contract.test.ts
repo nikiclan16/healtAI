@@ -21,7 +21,6 @@ describe('ScreeningSchema', () => {
     ['DASS ansiedad = -1', (f: Form) => (f.dass_ansiedad = -1)],
     ['DASS estrés = 22', (f: Form) => (f.dass_estres = 22)],
     ['ítem 21 = 4', (f: Form) => (f.dass_item21 = 4)],
-    ['ADA = 5', (f: Form) => (f.nivel_riesgo_amputacion = 5)],
   ])('rechaza %s', (_name, mutate) => {
     const f = clone()
     mutate(f)
@@ -30,6 +29,10 @@ describe('ScreeningSchema', () => {
 
   it('no captura ningún dato identificable del paciente (el código lo genera el sistema)', () => {
     expect(Object.keys(ScreeningSchema.shape).join(' ')).not.toMatch(/codigo|cedula|nombre|documento/i)
+  })
+
+  it('no captura el nivel de riesgo de amputación ADA/IWGDF (RF02.4)', () => {
+    expect(Object.keys(ScreeningSchema.shape).join(' ')).not.toMatch(/riesgo_amputacion|ada|iwgdf/i)
   })
 
   it('exige elegir un tratamiento', () => {

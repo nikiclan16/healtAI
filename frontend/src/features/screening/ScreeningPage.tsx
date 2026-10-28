@@ -12,7 +12,6 @@ import type { ScreeningForm } from '@/services/contract'
 import { ANEXO_E } from '@/services/fixtures/anexoE'
 import type { Evaluation } from '@/services/types'
 import {
-  AMPUTATION_RISK,
   FAMILY_SUPPORT,
   HEALTH_PERCEPTION,
   ITEM21_OPTIONS,
@@ -33,7 +32,6 @@ function answeredCount(v: Partial<ScreeningForm>): { answered: number; total: nu
     isNum(v.v8_tiempo_diagnostico),
     Boolean(v.v9_tratamiento),
     isNum(v.v12_percepcion_salud),
-    isNum(v.nivel_riesgo_amputacion),
     isNum(v.v14_actividad_fisica),
     isNum(v.v15_calidad_sueno),
     isNum(v.v13_apoyo_familiar),
@@ -146,8 +144,13 @@ export function ScreeningPage() {
   return (
     <div className="space-y-6">
       <div className="border-b border-slate-200 pb-4">
-        <span className="text-xs font-bold uppercase tracking-wider text-cuc-blue">Requisito Funcional 02</span>
-        <h1 className="text-xl font-bold text-slate-900">Formulario Clínico Estandarizado (Contrato de Datos)</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-cuc-blue">Requisito Funcional 02</span>
+            <h1 className="text-xl font-bold text-slate-900">Formulario Clínico Estandarizado (Contrato de Datos)</h1>
+          </div>
+          <span className="rounded border bg-slate-100 px-2.5 py-1 font-mono text-xs text-slate-700">Validación HTTP 422 Pre-Inferencia</span>
+        </div>
         <p className="mt-1 text-xs text-slate-500">Ingreso de variables del subconjunto S2 (15 variables), escala de bienestar WHO-5 y cuestionario DASS-21 con prevención estricta de fuga de datos.</p>
       </div>
 
@@ -220,15 +223,6 @@ export function ScreeningPage() {
                 <Controller control={control} name={name} render={({ field }) => <NumSelect label={label} value={field.value} onChange={field.onChange} options={[...options]} />} />
               </Field>
             ))}
-
-            <div className="border-t border-slate-100 pt-3">
-              <Field label="Nivel de Riesgo de Amputación (ADA/IWGDF)" error={errors.nivel_riesgo_amputacion?.message}>
-                <Controller control={control} name="nivel_riesgo_amputacion" render={({ field }) => <NumSelect label="Nivel de riesgo de amputación" value={field.value} onChange={field.onChange} options={AMPUTATION_RISK} />} />
-              </Field>
-              <p className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-[10px] text-red-800">
-                <strong>Aislamiento:</strong> este nivel NO entra al modelo clasificador (evita Data Leakage); solo uso clínico y regla de seguridad.
-              </p>
-            </div>
           </div>
 
           {/* 3 · Tamizaje psicométrico */}
@@ -336,6 +330,16 @@ export function ScreeningPage() {
           </button>
         </div>
       </form>
+
+      <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs">
+        <h4 className="flex items-center gap-1.5 font-bold text-slate-800">
+          <Icon name="shield-virus" className="text-emerald-700" />
+          <span>Control de Fuga de Información (Data Leakage)</span>
+        </h4>
+        <p className="text-slate-600">
+          El <strong>Nivel_de_Riesgo de amputación</strong> (ADA/IWGDF) está aislado del modelo clasificador predictivo ya que generaba separación perfecta en el análisis exploratorio. Solo se utiliza en la regla clínica de seguridad del motor de recomendaciones.
+        </p>
+      </div>
 
       <Modal
         open={modal !== null}

@@ -40,10 +40,8 @@ export const ScreeningSchema = z.object({
   /** Ítem 21 del DASS-21 (0–3). `null` = no evaluable (activa R1). */
   dass_item21: intRange(0, 3).nullable(),
 
-  /**
-   * Escala ADA/IWGDF. NUNCA se envía al modelo (RF02.4): solo uso clínico y reglas.
-   */
-  nivel_riesgo_amputacion: intRange(1, 4),
+  // El nivel de riesgo de amputación (ADA/IWGDF) no se captura en el formulario ni entra al
+  // modelo (RF02.4, mockup): solo lo usaría la regla clínica de seguridad del backend.
 
   /** Insumo de la regla de seguridad (RF05.1). */
   alertas_profesional: z.object({

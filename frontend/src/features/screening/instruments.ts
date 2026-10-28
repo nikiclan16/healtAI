@@ -41,14 +41,6 @@ export const FAMILY_SUPPORT = [
   { value: 5, label: '5 - Muy Alto / Sólido' },
 ]
 
-/** Nivel de riesgo de amputación ADA/IWGDF (solo uso clínico; no entra al modelo). */
-export const AMPUTATION_RISK = [
-  { value: 1, label: 'Nivel 1' },
-  { value: 2, label: 'Nivel 2' },
-  { value: 3, label: 'Nivel 3' },
-  { value: 4, label: 'Nivel 4' },
-]
-
 /** Ítem 21 del DASS-21. "no_evaluable" se guarda como `null` y activa R1. */
 export const ITEM21_OPTIONS = [
   { value: '0', label: '0 - No me aplicó en absoluto' },

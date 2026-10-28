@@ -18,6 +18,5 @@ export const ANEXO_E: ScreeningForm = {
   dass_ansiedad: 8,
   dass_estres: 12,
   dass_item21: 1,
-  nivel_riesgo_amputacion: 3,
   alertas_profesional: { riesgo_suicida: false, deterioro_agudo: false, riesgo_urgente: false },
 }
