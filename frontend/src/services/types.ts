@@ -36,7 +36,6 @@ export interface LoginCredentials {
 export interface PredictMeta {
   sede: SiteCode
   profesionalId: string
-  codigoPaciente: string
 }
 
 export interface ShapFactor {
@@ -81,6 +80,7 @@ export interface Decision {
 export interface Evaluation {
   id: string
   creadoEn: string
+  /** Código seudonimizado generado por el sistema (p. ej. PAC-2026-0048). */
   codigoPaciente: string
   sede: SiteCode
   profesional: { id: string; nombre: string }
@@ -95,4 +95,4 @@ export interface Evaluation {
   decision?: Decision
 }
 
-export type NewEvaluation = Omit<Evaluation, 'id' | 'creadoEn' | 'decision'>
+export type NewEvaluation = Omit<Evaluation, 'id' | 'creadoEn' | 'codigoPaciente' | 'decision'>

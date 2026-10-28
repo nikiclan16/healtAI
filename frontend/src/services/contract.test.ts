@@ -28,10 +28,8 @@ describe('ScreeningSchema', () => {
     expect(ScreeningSchema.safeParse(f).success).toBe(false)
   })
 
-  it('rechaza un código que parece cédula', () => {
-    const f = clone()
-    f.codigo_paciente = '1234567890'
-    expect(ScreeningSchema.safeParse(f).success).toBe(false)
+  it('no captura ningún dato identificable del paciente (el código lo genera el sistema)', () => {
+    expect(Object.keys(ScreeningSchema.shape).join(' ')).not.toMatch(/codigo|cedula|nombre|documento/i)
   })
 
   it('exige elegir un tratamiento', () => {

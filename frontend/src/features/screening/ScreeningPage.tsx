@@ -22,7 +22,6 @@ import {
 } from './instruments'
 
 const DEFAULTS = {
-  codigo_paciente: '',
   v11: { hipertension: false, cardiaca: false, obesidad: false, otra: false },
   alertas_profesional: { riesgo_suicida: false, deterioro_agudo: false, riesgo_urgente: false },
 }
@@ -31,7 +30,6 @@ const DEFAULTS = {
 function answeredCount(v: Partial<ScreeningForm>): { answered: number; total: number } {
   const isNum = (x: unknown) => typeof x === 'number' && !Number.isNaN(x)
   const checks = [
-    (v.codigo_paciente?.trim().length ?? 0) >= 3,
     isNum(v.v8_tiempo_diagnostico),
     Boolean(v.v9_tratamiento),
     isNum(v.v12_percepcion_salud),
@@ -93,7 +91,6 @@ export function ScreeningPage() {
       const prediccion = await services.model.predict(entrada, {
         sede: session.sede,
         profesionalId: session.user.id,
-        codigoPaciente: data.codigo_paciente,
       })
       const reglas = evaluateRules({
         who5Total: data.who5_total,
@@ -106,7 +103,6 @@ export function ScreeningPage() {
       })
       const { finalRoute, escalated } = resolveRoute(prediccion.rutaBase, reglas)
       const evaluation: Evaluation = await services.evaluations.create({
-        codigoPaciente: data.codigo_paciente,
         sede: session.sede,
         profesional: { id: session.user.id, nombre: session.user.nombre },
         formulario: data,
@@ -176,10 +172,6 @@ export function ScreeningPage() {
           {/* 1 · Variables clínicas DM2 */}
           <div className={panel}>
             <SectionTitle n={1} tone="bg-blue-100 text-cuc-blue">Variables Clínicas DM2</SectionTitle>
-
-            <Field label="Código del paciente (seudonimizado)" hint="No ingrese cédula ni nombre" error={errors.codigo_paciente?.message}>
-              <input className={inputClass} autoComplete="off" {...register('codigo_paciente')} />
-            </Field>
 
             <Controller
               control={control}

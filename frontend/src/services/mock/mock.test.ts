@@ -38,7 +38,7 @@ describe('mockAuthService', () => {
 
 describe('mockModelService', () => {
   it('devuelve probabilidad válida, ruta, confianza y Top 3 SHAP', async () => {
-    const r = await mockModelService.predict(buildModelInput(ANEXO_E), { sede: 'BAQ', profesionalId: 'u', codigoPaciente: 'PAC-1' })
+    const r = await mockModelService.predict(buildModelInput(ANEXO_E), { sede: 'BAQ', profesionalId: 'u' })
     expect(r.probabilidadRA).toBeGreaterThan(0)
     expect(r.probabilidadRA).toBeLessThan(1)
     expect(['A', 'B']).toContain(r.rutaBase)
@@ -52,19 +52,19 @@ describe('mockEvaluationService', () => {
 
   it('crea, lista y registra la decisión humana', async () => {
     const input = buildModelInput(ANEXO_E)
-    const prediccion = await mockModelService.predict(input, { sede: 'BAQ', profesionalId: 'u-001', codigoPaciente: 'PAC-1' })
-    const created = await mockEvaluationService.create({
-      codigoPaciente: 'PAC-1',
-      sede: 'BAQ',
+    const prediccion = await mockModelService.predict(input, { sede: 'BAQ', profesionalId: 'u-001' })
+    const base = {
+      sede: 'BAQ' as const,
       profesional: { id: 'u-001', nombre: 'Test' },
       formulario: ANEXO_E,
       entrada: input,
       prediccion,
       reglas: {} as never,
-      rutaSistema: 'A',
+      rutaSistema: 'A' as const,
       escalada: false,
       versiones: { app: '0.1.0', modelo: 'v1.0.0', diccionario: 'v2.1' },
-    })
+    }
+    const created = await mockEvaluationService.create(base)
     expect(await mockEvaluationService.list()).toHaveLength(1)
 
     const updated = await mockEvaluationService.recordDecision(created.id, {
@@ -76,5 +76,26 @@ describe('mockEvaluationService', () => {
     })
     expect(updated.decision?.rutaFinal).toBe('A')
     expect((await mockEvaluationService.get(created.id))?.decision).toBeDefined()
+  })
+
+  it('genera códigos seudonimizados consecutivos PAC-AAAA-NNNN', async () => {
+    const input = buildModelInput(ANEXO_E)
+    const prediccion = await mockModelService.predict(input, { sede: 'BAQ', profesionalId: 'u-001' })
+    const base = {
+      sede: 'BAQ' as const,
+      profesional: { id: 'u-001', nombre: 'Test' },
+      formulario: ANEXO_E,
+      entrada: input,
+      prediccion,
+      reglas: {} as never,
+      rutaSistema: 'A' as const,
+      escalada: false,
+      versiones: { app: '0.1.0', modelo: 'v1.0.0', diccionario: 'v2.1' },
+    }
+    const year = new Date().getFullYear()
+    const first = await mockEvaluationService.create(base)
+    const second = await mockEvaluationService.create(base)
+    expect(first.codigoPaciente).toBe(`PAC-${year}-0001`)
+    expect(second.codigoPaciente).toBe(`PAC-${year}-0002`)
   })
 })

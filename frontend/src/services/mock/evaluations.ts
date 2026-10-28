@@ -22,15 +22,31 @@ function writeAll(items: Evaluation[]) {
   }
 }
 
+/**
+ * Código seudonimizado consecutivo por año (PAC-AAAA-NNNN). En modo `http` lo genera el
+ * servidor; el profesional nunca escribe ni ve datos identificables (RNF01.2).
+ */
+function nextPatientCode(existing: Evaluation[], now: Date): string {
+  const year = now.getFullYear()
+  const prefix = `PAC-${year}-`
+  const last = existing
+    .filter((e) => e.codigoPaciente.startsWith(prefix))
+    .reduce((max, e) => Math.max(max, Number(e.codigoPaciente.slice(prefix.length))), 0)
+  return `${prefix}${String(last + 1).padStart(4, '0')}`
+}
+
 export const mockEvaluationService: EvaluationService = {
   async create(evaluation) {
     await delay(100)
+    const existing = readAll()
+    const now = new Date()
     const created: Evaluation = {
       ...evaluation,
       id: crypto.randomUUID(),
-      creadoEn: new Date().toISOString(),
+      creadoEn: now.toISOString(),
+      codigoPaciente: nextPatientCode(existing, now),
     }
-    writeAll([created, ...readAll()])
+    writeAll([created, ...existing])
     return created
   },
   async get(id) {

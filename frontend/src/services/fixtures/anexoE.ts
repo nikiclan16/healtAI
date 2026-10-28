@@ -6,7 +6,6 @@ import type { ScreeningForm } from '../contract'
  * Resultado esperado de reglas: R2, R4 y R5 → Ruta A.
  */
 export const ANEXO_E: ScreeningForm = {
-  codigo_paciente: 'PAC-2026-0048',
   v8_tiempo_diagnostico: 10,
   v9_tratamiento: 'orales',
   v11: { hipertension: true, cardiaca: false, obesidad: false, otra: false },

@@ -16,15 +16,7 @@ export const TREATMENTS = ['dieta_ejercicio', 'orales', 'insulina', 'orales_insu
 export type Treatment = (typeof TREATMENTS)[number]
 
 export const ScreeningSchema = z.object({
-  /** Código seudonimizado: nunca cédula ni nombre (RNF01.2). */
-  codigo_paciente: z
-    .string({ error: 'Requerido' })
-    .trim()
-    .min(3, 'Mínimo 3 caracteres')
-    .max(32, 'Máximo 32 caracteres')
-    .regex(/^[A-Za-z0-9-]+$/, 'Solo letras, números y guiones')
-    .refine((v) => !/^\d{6,}$/.test(v), 'Parece una cédula: use el código seudonimizado'),
-
+  // El código seudonimizado del paciente NO se captura: lo genera el sistema al guardar (RNF01.2).
   v8_tiempo_diagnostico: intRange(0, 80),
   v9_tratamiento: z.enum(TREATMENTS, { error: 'Seleccione una opción' }),
   /** Comorbilidades marcadas. "Ninguna" se deriva cuando no hay ninguna marcada. */

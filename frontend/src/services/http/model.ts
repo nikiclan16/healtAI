@@ -53,7 +53,7 @@ export const httpModelService: ModelService = {
     // `input` ya excluye Nivel_de_Riesgo (ver buildModelInput). `meta` es trazabilidad (RF01.2).
     const raw = await httpJson('/predecir', {
       method: 'POST',
-      body: { ...input, sede: meta.sede, profesional_id: meta.profesionalId, codigo_paciente: meta.codigoPaciente },
+      body: { ...input, sede: meta.sede, profesional_id: meta.profesionalId },
     })
     return toPredictResponse(raw)
   },
