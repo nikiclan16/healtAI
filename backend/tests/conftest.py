@@ -7,6 +7,9 @@ no deja datos, y los `commit()` del código bajo prueba se convierten en SAVEPOI
 import os
 
 os.environ["BCRYPT_ROUNDS"] = "4"  # antes de importar la app: acelera las pruebas
+# Las pruebas usan SIEMPRE el modelo de prueba, sin importar el .env del desarrollador.
+os.environ["MODEL_ARTIFACT_PATH"] = "model_artifacts/model.placeholder.json"
+os.environ["ALLOW_PLACEHOLDER_MODEL"] = "true"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -35,7 +38,16 @@ def db():
 
 @pytest.fixture
 def client(db):
-    app.dependency_overrides[get_db] = lambda: db
+    def override():
+        # Misma semántica que producción: confirma si va bien y revierte (al SAVEPOINT) si falla.
+        try:
+            yield db
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+    app.dependency_overrides[get_db] = override
     # Sin `with`: no ejecuta el lifespan (no crea el admin inicial en la BD real).
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -63,3 +75,26 @@ def admin_headers(client, db):
 
 def scalar(db, sql, **params):
     return db.execute(text(sql), params).scalar_one()
+
+
+ANEXO_E = {
+    "v8_tiempo_diagnostico": 10,
+    "v9_tratamiento": "orales",
+    "v11": {"hipertension": True, "cardiaca": False, "obesidad": False, "otra": False},
+    "v12_percepcion_salud": 3,
+    "v13_apoyo_familiar": 4,
+    "v14_actividad_fisica": 0,
+    "v15_calidad_sueno": 2,
+    "who5_total": 8,
+    "dass_depresion": 9,
+    "dass_ansiedad": 8,
+    "dass_estres": 12,
+    "dass_item21": 1,
+    "alertas_profesional": {"riesgo_suicida": False, "deterioro_agudo": False, "riesgo_urgente": False},
+}
+
+
+def clinical_headers(client, email, *, cargo="medico", sede="BAQ"):
+    res = client.post("/auth/login", json={"usuario": email, "password": PASSWORD, "cargo": cargo, "sede": sede})
+    assert res.status_code == 200, res.text
+    return {"Authorization": f"Bearer {res.json()['access_token']}"}

@@ -102,7 +102,7 @@ export function Layout() {
                 API Online
               </span>
             ) : (
-              <span className="inline-flex items-center rounded bg-red-100 px-2 py-0.5 font-medium text-red-800">
+              <span title={health.detalle} className="inline-flex items-center rounded bg-red-100 px-2 py-0.5 font-medium text-red-800">
                 <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-red-600" />
                 API no disponible
               </span>

@@ -19,7 +19,14 @@ class Settings(BaseSettings):
     max_failed_logins: int = 5
     lockout_minutes: int = 15
 
-    cors_origins: str = "http://localhost:5173,http://localhost:5174"
+    # Artefacto del modelo entrenado (JSON con pesos, intercepto y escalador). Ver model_artifacts/README.md.
+    model_artifact_path: str = "model_artifacts/model.json"
+    # Un artefacto marcado `placeholder` (valores de ejemplo) solo se carga si esto es true: NUNCA en producción.
+    allow_placeholder_model: bool = False
+
+    dictionary_version: str = "v2.1"
+
+    cors_origins: str ="http://localhost:5173,http://localhost:5174"
 
     # Administrador inicial: se crea al arrancar solo si no existe ningún admin activo.
     admin_email: str | None = None

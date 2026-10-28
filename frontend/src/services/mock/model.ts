@@ -1,7 +1,7 @@
 import { MODEL_VERSION } from '@/config/app'
 import type { ModelInput } from '../contract'
 import type { ModelService } from '../interfaces'
-import type { Confidence, ShapFactor } from '../types'
+import type { Confidence, PredictResponse, ShapFactor } from '../types'
 import { delay } from './auth'
 
 /**
@@ -63,31 +63,34 @@ function contributions(i: ModelInput): ShapFactor[] {
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
 const clamp01 = (x: number) => Math.min(0.99, Math.max(0.01, x))
 
+/** Inferencia simulada (solo desarrollo). El backend real hace esto en POST /evaluaciones. */
+export async function mockPredict(input: ModelInput): Promise<PredictResponse> {
+  await delay(400)
+  const contribs = contributions(input)
+  const p = sigmoid(-0.1 + contribs.reduce((acc, c) => acc + c.valor, 0))
+
+  // Retadores simulados que se separan según el perfil → confianza variable.
+  const retadores = {
+    knn: clamp01(p + (input.V12_PercepcionSalud - 3) * 0.04),
+    mlp: clamp01(p - (input.V15_CalidadSueno - 3) * 0.05),
+    consenso: clamp01(p),
+  }
+  const values = [p, retadores.knn, retadores.mlp]
+  const spread = Math.max(...values) - Math.min(...values)
+  const confianza: Confidence = spread < 0.08 ? 'Alta' : spread < 0.16 ? 'Media' : 'Baja'
+
+  return {
+    probabilidadRA: Number(p.toFixed(4)),
+    rutaBase: p >= 0.5 ? 'A' : 'B',
+    confianza,
+    retadores,
+    shapTop3: [...contribs].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor)).slice(0, 3),
+    versionModelo: MODEL_VERSION,
+    modeloPlaceholder: true,
+  }
+}
+
 export const mockModelService: ModelService = {
-  async predict(input) {
-    await delay(400)
-    const contribs = contributions(input)
-    const p = sigmoid(-0.1 + contribs.reduce((acc, c) => acc + c.valor, 0))
-
-    // Retadores simulados que se separan según el perfil → confianza variable.
-    const retadores = {
-      knn: clamp01(p + (input.V12_PercepcionSalud - 3) * 0.04),
-      mlp: clamp01(p - (input.V15_CalidadSueno - 3) * 0.05),
-      consenso: clamp01(p),
-    }
-    const values = [p, retadores.knn, retadores.mlp]
-    const spread = Math.max(...values) - Math.min(...values)
-    const confianza: Confidence = spread < 0.08 ? 'Alta' : spread < 0.16 ? 'Media' : 'Baja'
-
-    return {
-      probabilidadRA: Number(p.toFixed(4)),
-      rutaBase: p >= 0.5 ? 'A' : 'B',
-      confianza,
-      retadores,
-      shapTop3: [...contribs].sort((a, b) => Math.abs(b.valor) - Math.abs(a.valor)).slice(0, 3),
-      versionModelo: MODEL_VERSION,
-    }
-  },
   async health() {
     await delay(150)
     return { ok: true, versionModelo: MODEL_VERSION, detalle: 'Modelo simulado (modo demo)' }

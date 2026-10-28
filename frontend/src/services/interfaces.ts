@@ -1,14 +1,5 @@
-import type { ModelInput } from './contract'
-import type {
-  Decision,
-  Evaluation,
-  HealthStatus,
-  LoginCredentials,
-  NewEvaluation,
-  PredictMeta,
-  PredictResponse,
-  Session,
-} from './types'
+import type { ScreeningForm } from './contract'
+import type { Decision, Evaluation, HealthStatus, LoginCredentials, Session } from './types'
 
 /** Errores de la API. */
 export class ApiError extends Error {
@@ -43,14 +34,16 @@ export interface AuthService {
 }
 
 export interface ModelService {
-  /** POST /predecir */
-  predict(input: ModelInput, meta: PredictMeta): Promise<PredictResponse>
   /** GET /salud */
   health(): Promise<HealthStatus>
 }
 
 export interface EvaluationService {
-  create(evaluation: NewEvaluation): Promise<Evaluation>
+  /**
+   * Ejecuta el tamizaje completo: inferencia + motor de reglas + registro (POST /evaluaciones).
+   * El servidor calcula la predicción, las reglas y la ruta; el cliente solo envía las respuestas.
+   */
+  submit(form: ScreeningForm): Promise<Evaluation>
   get(id: string): Promise<Evaluation | null>
   list(): Promise<Evaluation[]>
   recordDecision(id: string, decision: Decision): Promise<Evaluation>

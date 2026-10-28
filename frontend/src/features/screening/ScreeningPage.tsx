@@ -2,15 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import { API_MODE, APP_VERSION, DICTIONARY_VERSION } from '@/config/app'
+import { MODEL_CARD } from '@/config/app'
 import { Field, Icon, Modal, NumSelect, Slider, inputClass } from '@/components/ui'
-import { useAuthStore } from '@/features/auth/authStore'
-import { evaluateRules, resolveRoute, who5Percent } from '@/rules'
+import { who5Percent } from '@/rules'
 import { ApiValidationError, services } from '@/services'
-import { ScreeningSchema, buildModelInput } from '@/services/contract'
+import { ScreeningSchema } from '@/services/contract'
 import type { ScreeningForm } from '@/services/contract'
 import { ANEXO_E } from '@/services/fixtures/anexoE'
-import type { Evaluation } from '@/services/types'
 import {
   FAMILY_SUPPORT,
   HEALTH_PERCEPTION,
@@ -57,7 +55,6 @@ const panel = 'space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-
 
 /** Captura del contrato de datos S2 + WHO-5 + DASS-21 (mockup RF02). */
 export function ScreeningPage() {
-  const session = useAuthStore((s) => s.session)!
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,39 +82,16 @@ export function ScreeningPage() {
     setError(null)
     setFieldErrors([])
     try {
-      const entrada = buildModelInput(data)
-      const prediccion = await services.model.predict(entrada, {
-        sede: session.sede,
-        profesionalId: session.user.id,
-      })
-      const reglas = evaluateRules({
-        who5Total: data.who5_total,
-        dass: { depresion: data.dass_depresion, ansiedad: data.dass_ansiedad, estres: data.dass_estres },
-        item21: data.dass_item21,
-        v13ApoyoFamiliar: data.v13_apoyo_familiar,
-        v14ActividadFisica: data.v14_actividad_fisica,
-        v15CalidadSueno: data.v15_calidad_sueno,
-        alertasProfesional: data.alertas_profesional,
-      })
-      const { finalRoute, escalated } = resolveRoute(prediccion.rutaBase, reglas)
-      const evaluation: Evaluation = await services.evaluations.create({
-        sede: session.sede,
-        profesional: { id: session.user.id, nombre: session.user.nombre },
-        formulario: data,
-        entrada,
-        prediccion,
-        reglas,
-        rutaSistema: finalRoute,
-        escalada: escalated,
-        versiones: { app: APP_VERSION, modelo: prediccion.versionModelo, diccionario: DICTIONARY_VERSION },
-      })
+      // El servidor ejecuta la inferencia, el motor de reglas y el registro (POST /evaluaciones).
+      const evaluation = await services.evaluations.submit(data)
+      const { prediccion, reglas } = evaluation
       const go = () => navigate(`/evaluacion/${evaluation.id}`)
       setModal({
         title: 'Inferencia Ejecutada con Éxito',
         onClose: go,
         body: (
           <>
-            <p>Se evaluaron las 15 variables de entrada con el modelo <strong>RegLog L2 (S2)</strong>.</p>
+            <p>Se evaluaron las {Object.keys(evaluation.entrada).length} variables de entrada con el modelo <strong>{MODEL_CARD.nombre}</strong>.</p>
             <p>
               Probabilidad P(RA): <strong>{(prediccion.probabilidadRA * 100).toFixed(1)}%</strong> | Ruta Base: <strong>{prediccion.rutaBase === 'A' ? 'RA' : 'RB'}</strong>
             </p>
@@ -163,7 +137,7 @@ export function ScreeningPage() {
             <span><strong>Contrato de Datos incompleto:</strong> {answered} de {total} campos obligatorios completados.</span>
           )}
         </span>
-        {import.meta.env.DEV && API_MODE === 'mock' && (
+        {import.meta.env.DEV && (
           <button type="button" onClick={loadExample} className="rounded bg-cuc-blue px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700">
             Recargar Valores Anexo E
           </button>

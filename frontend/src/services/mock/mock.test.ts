@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { buildModelInput } from '../contract'
+import { useAuthStore } from '@/features/auth/authStore'
 import { ANEXO_E } from '../fixtures/anexoE'
 import { mockAuthService } from './auth'
 import { mockEvaluationService } from './evaluations'
@@ -34,39 +34,56 @@ describe('mockAuthService', () => {
     const s = await mockAuthService.login({ usuario: inv.usuario, password: inv.password, cargo: 'investigador', sede: 'VUP' })
     expect(s.user.rol).toBe('investigador')
   })
+
+  it('lista los roles operativos', async () => {
+    const cargos = await mockAuthService.listCargos()
+    expect(cargos.map((c) => c.code)).toContain('medico')
+  })
 })
 
 describe('mockModelService', () => {
-  it('devuelve probabilidad válida, ruta, confianza y Top 3 SHAP', async () => {
-    const r = await mockModelService.predict(buildModelInput(ANEXO_E), { sede: 'BAQ', profesionalId: 'u' })
-    expect(r.probabilidadRA).toBeGreaterThan(0)
-    expect(r.probabilidadRA).toBeLessThan(1)
-    expect(['A', 'B']).toContain(r.rutaBase)
-    expect(r.shapTop3).toHaveLength(3)
-    expect(r.versionModelo).toBe('v1.0.0')
+  it('informa su estado', async () => {
+    expect((await mockModelService.health()).ok).toBe(true)
   })
 })
 
 describe('mockEvaluationService', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => {
+    localStorage.clear()
+    useAuthStore.setState({
+      session: {
+        token: 't',
+        expiresAt: Date.now() + 3_600_000,
+        sede: 'BAQ',
+        user: { id: 'u-001', nombre: 'Dr. Test', rol: 'evaluador', cargo: 'medico', cargoLabel: 'Médico' },
+      },
+    })
+  })
 
-  it('crea, lista y registra la decisión humana', async () => {
-    const input = buildModelInput(ANEXO_E)
-    const prediccion = await mockModelService.predict(input, { sede: 'BAQ', profesionalId: 'u-001' })
-    const base = {
-      sede: 'BAQ' as const,
-      profesional: { id: 'u-001', nombre: 'Test' },
-      formulario: ANEXO_E,
-      entrada: input,
-      prediccion,
-      reglas: {} as never,
-      rutaSistema: 'A' as const,
-      escalada: false,
-      versiones: { app: '0.1.0', modelo: 'v1.0.0', diccionario: 'v2.1' },
-    }
-    const created = await mockEvaluationService.create(base)
+  it('el tamizaje completo (Anexo E) devuelve la evaluación con reglas y ruta', async () => {
+    const ev = await mockEvaluationService.submit(ANEXO_E)
+    expect(ev.codigoPaciente).toMatch(/^PAC-\d{4}-0001$/)
+    expect(ev.sede).toBe('BAQ')
+    expect(ev.reglas.triggered.map((r) => r.code)).toEqual(['R2', 'R4', 'R5'])
+    expect(ev.rutaSistema).toBe('A')
+    expect(Object.keys(ev.entrada)).toHaveLength(15)
+    expect(ev.prediccion.shapTop3).toHaveLength(3)
+  })
+
+  it('exige una sesión activa', async () => {
+    useAuthStore.setState({ session: null })
+    await expect(mockEvaluationService.submit(ANEXO_E)).rejects.toThrow(/sesión/)
+  })
+
+  it('genera códigos seudonimizados consecutivos', async () => {
+    const a = await mockEvaluationService.submit(ANEXO_E)
+    const b = await mockEvaluationService.submit(ANEXO_E)
+    expect(Number(b.codigoPaciente.slice(-4))).toBe(Number(a.codigoPaciente.slice(-4)) + 1)
+  })
+
+  it('lista, consulta y registra la decisión humana', async () => {
+    const created = await mockEvaluationService.submit(ANEXO_E)
     expect(await mockEvaluationService.list()).toHaveLength(1)
-
     const updated = await mockEvaluationService.recordDecision(created.id, {
       accion: 'confirmar',
       rutaFinal: 'A',
@@ -76,26 +93,5 @@ describe('mockEvaluationService', () => {
     })
     expect(updated.decision?.rutaFinal).toBe('A')
     expect((await mockEvaluationService.get(created.id))?.decision).toBeDefined()
-  })
-
-  it('genera códigos seudonimizados consecutivos PAC-AAAA-NNNN', async () => {
-    const input = buildModelInput(ANEXO_E)
-    const prediccion = await mockModelService.predict(input, { sede: 'BAQ', profesionalId: 'u-001' })
-    const base = {
-      sede: 'BAQ' as const,
-      profesional: { id: 'u-001', nombre: 'Test' },
-      formulario: ANEXO_E,
-      entrada: input,
-      prediccion,
-      reglas: {} as never,
-      rutaSistema: 'A' as const,
-      escalada: false,
-      versiones: { app: '0.1.0', modelo: 'v1.0.0', diccionario: 'v2.1' },
-    }
-    const year = new Date().getFullYear()
-    const first = await mockEvaluationService.create(base)
-    const second = await mockEvaluationService.create(base)
-    expect(first.codigoPaciente).toBe(`PAC-${year}-0001`)
-    expect(second.codigoPaciente).toBe(`PAC-${year}-0002`)
   })
 })

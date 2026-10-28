@@ -29,8 +29,9 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 - `src/services/` — **las pantallas nunca usan `fetch`**; importan `services` de `@/services`.
   - `interfaces.ts`: contratos (`AuthService`, `ModelService`, `EvaluationService`).
   - `mock/` (demo, `VITE_API_MODE=mock`) y `http/` (backend real, `VITE_API_MODE=http`).
-  - **Cuando llegue el contrato real de `POST /predecir`, el único archivo a ajustar es `http/model.ts`** (`toRequestBody`/`RawPredict`/`toPredictResponse`) y, si cambian las variables, `buildModelInput` en `contract.ts`.
-- `src/rules/` — motor R1–R5 + seguridad: funciones puras, sin React ni I/O, con pruebas. Se reemplazará por la API de `motor_reglas.py`.
+  - `EvaluationService.submit(form)` → `POST /evaluaciones`: **el servidor** ejecuta modelo, SHAP, reglas y registro; el cliente solo envía las respuestas y muestra el resultado. El contrato del formulario está duplicado en `backend/app/schemas_clinicos.py`: cambiarlos juntos.
+  - La confianza puede ser `null` (modelos retadores sin conectar) y `modeloPlaceholder` indica que el backend usa el modelo de prueba: la UI debe mostrarlo.
+- `src/rules/` — motor R1–R5 + seguridad: funciones puras con pruebas. **Solo lo usa el modo mock de desarrollo**; en producción las reglas las ejecuta el backend (`backend/app/reglas/motor_reglas.py`). Mantener ambos en sincronía.
 - `src/services/contract.ts` — esquema zod = única fuente de validación de rangos.
 - `src/features/<módulo>/` — auth, screening, results, decision, dashboard, investigator, **admin** (URL `/admin`, sin modo mock: siempre usa el backend; sesión y token propios).
 - `src/components/` — Layout, Disclaimer, VersionBadge, ui.
@@ -47,6 +48,5 @@ Una tarea no está terminada hasta que `lint`, `test:run` y `build` pasan.
 ## Pendientes conocidos
 
 - El formulario captura WHO-5 y subescalas DASS-21 como **totales** (sliders / campos numéricos) y el ítem 21 como desplegable, igual que el mockup. La especificación RF02.2 pide los 21 ítems individuales: pendiente de decidir con el equipo clínico.
-- Contrato real de `/predecir`, `/auth/login`, `/evaluaciones`.
 - Validación clínica de umbrales (`rules/config.ts`).
 - Decidir cuántos roles hay (2 perfiles vs. 4 cargos).

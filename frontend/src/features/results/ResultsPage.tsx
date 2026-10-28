@@ -42,7 +42,7 @@ export function ResultsPage() {
   const { prediccion: p, reglas, rutaSistema } = evaluation
   const baseIsA = p.rutaBase === 'A'
   const finalIsA = rutaSistema === 'A'
-  const conf = CONFIDENCE[p.confianza]
+  const conf = p.confianza ? CONFIDENCE[p.confianza] : null
   const mlpAgrees = p.retadores ? Math.abs(p.retadores.mlp - p.probabilidadRA) < 0.1 : false
   const actions = ROUTE_ACTIONS[rutaSistema]
 
@@ -58,6 +58,13 @@ export function ResultsPage() {
           sistema v{evaluation.versiones.app} · modelo {evaluation.versiones.modelo} · diccionario {evaluation.versiones.diccionario}
         </p>
       </div>
+
+      {p.modeloPlaceholder && (
+        <div role="alert" className="flex items-center gap-3 rounded-xl border-2 border-amber-500 bg-amber-50 p-4 text-sm font-bold text-amber-900">
+          <Icon name="flask" className="text-lg" />
+          MODELO DE PRUEBA ({p.versionModelo}): esta predicción usa valores de ejemplo y NO es una estimación clínica.
+        </div>
+      )}
 
       {reglas.suicideAlert && (
         <div role="alert" className="flex items-center gap-3 rounded-xl border-2 border-cuc-alert bg-red-50 p-4 text-sm font-bold text-red-800">
@@ -85,11 +92,23 @@ export function ResultsPage() {
 
         <div className={box}>
           <span className={cardLabel}>Robustez de Predicción</span>
-          <div className="flex items-center gap-2">
-            <span className={`h-3 w-3 rounded-full ${conf.dot}`} />
-            <span className="text-xl font-bold text-slate-800">{p.confianza} Confianza</span>
-          </div>
-          <p className="text-xs text-slate-600">{conf.text}</p>
+          {conf && p.confianza ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className={`h-3 w-3 rounded-full ${conf.dot}`} />
+                <span className="text-xl font-bold text-slate-800">{p.confianza} Confianza</span>
+              </div>
+              <p className="text-xs text-slate-600">{conf.text}</p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-slate-300" />
+                <span className="text-xl font-bold text-slate-500">No disponible</span>
+              </div>
+              <p className="text-xs text-slate-600">Los modelos retadores (KNN, MLP y consenso) aún no están conectados; no se muestra un nivel de confianza.</p>
+            </>
+          )}
           {p.retadores && (
             <p className="font-mono text-[10px] text-slate-500">
               KNN {(p.retadores.knn * 100).toFixed(1)}% · MLP {(p.retadores.mlp * 100).toFixed(1)}% · Consenso {(p.retadores.consenso * 100).toFixed(1)}%

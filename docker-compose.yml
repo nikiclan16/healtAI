@@ -37,9 +37,16 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-healthai}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-healthai}
       SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY en .env (mínimo 32 caracteres)}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174}
+      # Modelo: por defecto se exige un artefacto REAL en backend/model_artifacts/model.json.
+      # El de prueba (placeholder) solo se carga si ALLOW_PLACEHOLDER_MODEL=true (solo desarrollo).
+      MODEL_ARTIFACT_PATH: ${MODEL_ARTIFACT_PATH:-model_artifacts/model.json}
+      ALLOW_PLACEHOLDER_MODEL: ${ALLOW_PLACEHOLDER_MODEL:-false}
       # Administrador inicial (solo se crea si no existe ningún admin activo).
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      # El modelo real se instala aquí (solo lectura); no va dentro de la imagen.
+      - ./backend/model_artifacts:/app/model_artifacts:ro
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
 

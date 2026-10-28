@@ -1,5 +1,5 @@
 import type { RulesResult } from '@/rules'
-import type { ModelInput, ScreeningForm } from './contract'
+import type { ScreeningForm } from './contract'
 
 export type SiteCode = 'BAQ' | 'RHA' | 'VUP'
 /** Perfil de acceso (RBAC) — lo decide el servidor. */
@@ -36,11 +36,6 @@ export interface LoginCredentials {
   sede: SiteCode
 }
 
-export interface PredictMeta {
-  sede: SiteCode
-  profesionalId: string
-}
-
 export interface ShapFactor {
   variable: string
   etiqueta: string
@@ -57,10 +52,13 @@ export interface ShapFactor {
 export interface PredictResponse {
   probabilidadRA: number
   rutaBase: RouteCode
-  confianza: Confidence
+  /** `null` mientras los modelos retadores (KNN, MLP) no estén conectados. */
+  confianza: Confidence | null
   retadores: { knn: number; mlp: number; consenso: number } | null
   shapTop3: ShapFactor[]
   versionModelo: string
+  /** true si el servidor usa el modelo de prueba (valores de ejemplo, NO clínico). */
+  modeloPlaceholder?: boolean
 }
 
 export interface HealthStatus {
@@ -88,7 +86,8 @@ export interface Evaluation {
   sede: SiteCode
   profesional: { id: string; nombre: string }
   formulario: ScreeningForm
-  entrada: ModelInput
+  /** Variables que usó el modelo (nombre → valor). */
+  entrada: Record<string, number>
   prediccion: PredictResponse
   reglas: RulesResult
   /** Ruta tras aplicar las reglas (lo que el sistema sugiere). */
@@ -98,4 +97,3 @@ export interface Evaluation {
   decision?: Decision
 }
 
-export type NewEvaluation = Omit<Evaluation, 'id' | 'creadoEn' | 'codigoPaciente' | 'decision'>

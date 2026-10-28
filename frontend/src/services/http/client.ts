@@ -33,9 +33,11 @@ export async function httpJson(
   const payload: unknown = await res.json().catch(() => null)
 
   if (res.status === 422) {
-    const detail = (payload as { detail?: FastApiIssue[] } | null)?.detail ?? []
+    const detail = (payload as { detail?: FastApiIssue[] | string } | null)?.detail
+    // 422 con texto: regla de negocio rechazada por el servidor (p. ej. regla de seguridad).
+    if (typeof detail === 'string') throw new ApiError(detail, 422)
     throw new ApiValidationError(
-      detail.map((d) => ({ campo: (d.loc ?? []).slice(1).join('.'), mensaje: d.msg ?? 'Valor inválido' })),
+      (detail ?? []).map((d) => ({ campo: (d.loc ?? []).slice(1).join('.'), mensaje: d.msg ?? 'Valor inválido' })),
     )
   }
   if (res.status === 401) {

@@ -1,0 +1,11 @@
+{
+  "version": "v1.0.0-placeholder",
+  "placeholder": true,
+  "descripcion": "MODELO DE PRUEBA. Usa los coeficientes de ejemplo del mockup; NO es el modelo entrenado y sus resultados no son clínicos. Solo para desarrollo y pruebas (ALLOW_PLACEHOLDER_MODEL=true).",
+  "umbral": 0.5,
+  "intercepto": 0.005,
+  "features": ["hipertension", "actividad_fisica", "calidad_sueno", "who5_total", "tiempo_dm2"],
+  "pesos": [0.051, -0.030, -0.016, -0.031, -0.012],
+  "media": [0.5, 1.0, 3.0, 13.0, 10.0],
+  "escala": [0.5, 1.0, 1.0, 6.0, 8.0]
+}

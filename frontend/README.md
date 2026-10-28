@@ -25,7 +25,7 @@ Usuarios de prueba (solo demo): ver `src/services/mock/users.ts`. En la pantalla
 | Exportar PDF | `window.print()` (CSS de impresión básico) |
 | Panel de investigador | Placeholder |
 | **Administración** (`/admin`): login de admin, alta de usuarios y roles | Hecho (requiere el backend) |
-| Adapters `http` | Esqueleto: contrato **provisional** |
+| Adapters `http` (login, evaluaciones, decisión, salud) | Hecho: conectados al backend |
 
 ## Administración de usuarios y roles
 
@@ -45,7 +45,7 @@ El administrador inicial lo define `ADMIN_EMAIL` / `ADMIN_PASSWORD` en el `.env`
 
 ## Producción
 
-`npm run build` genera siempre un paquete **sin modo demo**: ignora `VITE_API_MODE`, no incluye servicios simulados ni usuarios de prueba, y habla solo con el backend real. Defina `VITE_API_BASE_URL` con la URL pública de la API, o déjela vacía si la API se sirve bajo el mismo dominio. Para el modelo y las evaluaciones el backend debe exponer `/predecir` y `/evaluaciones` (pendientes).
+`npm run build` genera siempre un paquete **sin modo demo**: ignora `VITE_API_MODE`, no incluye servicios simulados ni usuarios de prueba, y habla solo con el backend real. Defina `VITE_API_BASE_URL` con la URL pública de la API, o déjela vacía si la API se sirve bajo el mismo dominio. El backend ejecuta el modelo y las reglas (`POST /evaluaciones`); sin un artefacto de modelo válido responde 503.
 
 ## Conectar el backend real
 
