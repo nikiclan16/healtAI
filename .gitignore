@@ -18,3 +18,6 @@ __pycache__/
 
 # Modelo entrenado real (se instala en el servidor; el repo solo trae el de prueba)
 backend/model_artifacts/model.json
+
+# Documentación generada (contiene credenciales)
+docs/*.pdf
