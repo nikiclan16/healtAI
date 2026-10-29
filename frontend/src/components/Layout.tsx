@@ -7,6 +7,7 @@ import { services } from '@/services'
 import type { HealthStatus } from '@/services/types'
 import { Disclaimer } from './Disclaimer'
 import { Icon } from './ui'
+import { PoweredBy } from './PoweredBy'
 import { VersionBadge } from './VersionBadge'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -130,10 +131,7 @@ export function Layout() {
             <p className="font-medium text-white">Universidad de la Costa - CUC | Barranquilla, Colombia</p>
             <p className="text-[11px] text-slate-400">Convenio {CONVENIO} · Convocatoria MinCiencias 963 de 2025 · {APP_NAME}</p>
           </div>
-          <div className="font-mono text-[11px] text-slate-400">
-            <VersionBadge />
-            <div>TRIPOD+AI Statement Compliant · Ley 1581 de 2012</div>
-          </div>
+          <PoweredBy className="text-slate-400" />
         </div>
       </footer>
     </div>

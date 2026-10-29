@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { CONVENIO } from '@/config/app'
 import { Icon } from '@/components/ui'
-import { VersionBadge } from '@/components/VersionBadge'
+import { PoweredBy } from '@/components/PoweredBy'
 import { isAdminSessionValid, useAdminStore } from './adminStore'
 
 /** Marco del área de administración (login incluido). Separado del flujo clínico. */
@@ -62,8 +62,8 @@ export function AdminLayout() {
 
       <footer className="bg-cuc-navy px-4 py-3 text-center text-xs text-slate-300">
         <p className="font-medium text-white">Universidad de la Costa - CUC | Gestión de usuarios y roles</p>
-        <VersionBadge className="text-slate-400" />
         <p className="mt-1 text-[11px] text-slate-400"><Icon name="lock" className="mr-1" />Las acciones de administración quedan registradas en la bitácora de auditoría.</p>
+        <PoweredBy className="mt-1 text-slate-400" />
       </footer>
     </div>
   )
