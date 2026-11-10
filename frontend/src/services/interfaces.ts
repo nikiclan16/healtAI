@@ -67,8 +67,8 @@ export interface EvaluationService {
 export interface BatchService {
   /** POST /lotes con un archivo CSV/XLSX. */
   upload(file: File): Promise<BatchResult>
-  /** Plantilla CSV con las columnas del diccionario. */
-  template(): Promise<DownloadedFile>
+  /** Formato de sistematización (hoja «Sistematizacion»), en CSV o XLSX. */
+  template(format: 'csv' | 'xlsx'): Promise<DownloadedFile>
 }
 
 /** Panel del investigador (solo lectura). Requiere el backend: no tiene modo simulado. */

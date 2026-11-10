@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, File, UploadFile
-from fastapi.responses import PlainTextResponse
+from pathlib import Path
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from .. import audit
@@ -11,14 +13,21 @@ from ..servicios import lote
 
 router = APIRouter(prefix="/lotes", tags=["lotes"])
 
+PLANTILLAS = Path(__file__).resolve().parent.parent / "plantillas"
+_FORMATOS = {
+    "csv": ("Formato_sistematizacion.csv", "text/csv; charset=utf-8"),
+    "xlsx": ("Formato_sistematizacion.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+}
 
-@router.get("/plantilla", response_class=PlainTextResponse)
-def plantilla(_user: dict = Depends(current_clinical)):
-    """Plantilla CSV con las columnas del diccionario y una fila de ejemplo."""
-    return PlainTextResponse(
-        "\n".join(lote.PLANTILLA) + "\n",
-        media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": 'attachment; filename="plantilla_lote.csv"'},
+
+@router.get("/plantilla")
+def plantilla(formato: Literal["csv", "xlsx"] = "csv", _user: dict = Depends(current_clinical)):
+    """Formato de sistematización (hoja «Sistematizacion» + diccionario de codificación en el XLSX)."""
+    archivo, media_type = _FORMATOS[formato]
+    return Response(
+        (PLANTILLAS / archivo).read_bytes(),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{archivo}"'},
     )
 
 

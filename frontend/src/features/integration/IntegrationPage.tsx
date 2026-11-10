@@ -137,9 +137,9 @@ function BatchCard() {
     }
   }
 
-  async function template() {
+  async function template(format: 'csv' | 'xlsx') {
     try {
-      saveFile(await services.batch.template())
+      saveFile(await services.batch.template(format))
     } catch (e) {
       setError(errorText(e))
     }
@@ -183,7 +183,7 @@ function BatchCard() {
           <div className="text-xs font-semibold text-slate-700">
             {busy ? 'Procesando…' : 'Arrastra aquí el archivo CSV/XLSX'}
           </div>
-          <p className="text-[11px] text-slate-400">Verificación automática de columnas conforme al Diccionario v2.1</p>
+          <p className="text-[11px] text-slate-400">Use el formato de sistematización (hoja «Sistematizacion»), CSV o XLSX</p>
           <input
             ref={input}
             type="file"
@@ -197,10 +197,16 @@ function BatchCard() {
 
         <div className="flex items-center justify-between pt-3 text-xs">
           <span className="font-mono text-slate-500">Máx. {MAX_MB} MB · 2000 filas</span>
-          <button type="button" onClick={template} className="font-semibold text-cuc-blue hover:underline">
-            <Icon name="download" className="mr-1" />
-            Descargar plantilla CSV
-          </button>
+          <span className="flex items-center gap-3">
+            <button type="button" onClick={() => void template('xlsx')} className="font-semibold text-cuc-blue hover:underline">
+              <Icon name="download" className="mr-1" />
+              Formato XLSX
+            </button>
+            <button type="button" onClick={() => void template('csv')} className="font-semibold text-cuc-blue hover:underline">
+              <Icon name="download" className="mr-1" />
+              Formato CSV
+            </button>
+          </span>
         </div>
       </Card>
 
@@ -236,6 +242,11 @@ function BatchResultCard({ result }: { result: BatchResult }) {
           <div>• Ruta final sugerida: {r.finalA} Ruta A / {r.finalB} Ruta B</div>
           <div className="break-all">• Integridad SHA-256: {result.sha256}</div>
           <div>• Modelo {result.versiones.modelo} · Diccionario {result.versiones.diccionario}</div>
+          {!!result.columnasIgnoradas?.length && (
+            <div className="font-sans text-slate-500">
+              • Columnas que el modelo no usa (se descartan, no se guardan): {result.columnasIgnoradas.join(', ')}
+            </div>
+          )}
         </div>
         <div className="space-y-2 text-slate-600">
           <p>

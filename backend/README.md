@@ -26,7 +26,7 @@ Al arrancar, si no existe ningún administrador activo, se crea uno con `ADMIN_E
 | GET | `/evaluaciones`, `/evaluaciones/{id}` | clínico | Evaluador: solo las suyas; investigador: todas (lectura) |
 | POST | `/evaluaciones/{id}/decision` | evaluador | Decisión humana final (una por evaluación; RF06) |
 | POST | `/lotes` | clínico | Procesamiento por lotes (RF03.2): archivo CSV/XLSX → inferencia + reglas por fila. Solo calcula; no crea evaluaciones. Registra en bitácora el SHA-256 del archivo |
-| GET | `/lotes/plantilla` | clínico | Plantilla CSV con las columnas del diccionario |
+| GET | `/lotes/plantilla?formato=csv\|xlsx` | clínico | Formato de sistematización oficial (hoja «Sistematizacion» + diccionario de codificación) |
 | GET | `/investigador/metricas` | investigador | Métricas por sede, reglas activadas, concordancia modelo vs. profesional (ventana de 50), integridad de la bitácora |
 | GET | `/investigador/evaluaciones.csv`, `/investigador/auditoria.csv` | investigador | Exportaciones (solo código seudonimizado); cada descarga queda en bitácora |
 | POST | `/auth/cambiar-password` | clínico | El usuario cambia su propia contraseña (exige la actual) |
@@ -48,14 +48,19 @@ Al arrancar, si no existe ningún administrador activo, se crea uno con `ADMIN_E
 
 ## Carga por lotes (RF03.2)
 
-`POST /lotes` (campo `archivo`, `.csv` o `.xlsx`, máx. 5 MB y 2000 filas). Acepta coma, punto y coma o tabulación. La primera fila es la cabecera; las columnas son las del formulario:
+`POST /lotes` (campo `archivo`, `.csv` o `.xlsx`, máx. 5 MB y 2000 filas). Acepta coma, punto y coma o tabulación, y CSV en UTF-8 o Windows-1252. La primera fila es la cabecera. `GET /lotes/plantilla?formato=csv|xlsx` entrega el formato oficial (`app/plantillas/`).
 
-`v8_tiempo_diagnostico, v9_tratamiento, v11_hipertension, v11_cardiaca, v11_obesidad, v11_otra, v12_percepcion_salud, v13_apoyo_familiar, v14_actividad_fisica, v15_calidad_sueno, who5_total, dass_depresion, dass_ansiedad, dass_estres, dass_item21` y, opcionales (por defecto sin alerta), `alerta_riesgo_suicida, alerta_deterioro_agudo, alerta_riesgo_urgente`.
+**Formato de sistematización** (`Formato.xlsx`, hoja «Sistematizacion», o su CSV): `Sujeto, Nivel_de_Riesgo, Ruta_1, Ruta_2, V1…V6, V8, V9_Trat_* (5), V11_Enf_* (5), V12…V15`, los 5 ítems de WHO-5 y los 21 de DASS-21 con sus totales.
 
-- Booleanos: `1/0`, `sí/no`, `true/false`. `dass_item21` vacío = no evaluable (activa R1).
-- **Una columna desconocida rechaza todo el archivo** (422): así no entran identificadores (cédula, nombre…) ni el nivel de riesgo de amputación.
-- Las filas inválidas no detienen el lote: se devuelven con su número de fila y el motivo.
-- Los nombres de columna son provisionales hasta contar con el Diccionario de Datos v2.1 oficial: se cambian en un solo lugar (`app/servicios/lote.py`, `COLUMNAS`).
+- Los totales se **calculan con los ítems** (las fórmulas de Excel suelen venir sin valor guardado); si el total digitado no coincide con la suma, la fila se rechaza. Si no hay ítems, se usa `Total_*`.
+- `V9`: exactamente una opción en 1. `V11`: «Ninguna» es excluyente y debe marcarse algo. El ítem 21 de depresión vacío = no evaluable (activa R1).
+- **Se leen pero se descartan**: `Sujeto`, `Nivel_de_Riesgo` (riesgo de amputación, nunca entra al modelo), `Ruta_1`, `Ruta_2` y `V1`–`V6` (el modelo no usa sociodemográficas). El código del sujeto no se devuelve ni se guarda; las filas se identifican por su número en el archivo. La respuesta lista lo descartado en `columnasIgnoradas`.
+
+**Formato corto** (también aceptado): `v8_tiempo_diagnostico, v9_tratamiento, v11_hipertension, v11_cardiaca, v11_obesidad, v11_otra, v12_percepcion_salud, v13_apoyo_familiar, v14_actividad_fisica, v15_calidad_sueno, who5_total, dass_depresion, dass_ansiedad, dass_estres, dass_item21` y, opcionales (por defecto sin alerta), `alerta_riesgo_suicida, alerta_deterioro_agudo, alerta_riesgo_urgente`. Booleanos: `1/0`, `sí/no`, `true/false`.
+
+- **Una columna desconocida rechaza todo el archivo** (422): así no entran identificadores (cédula, nombre…).
+- Las filas inválidas no detienen el lote: se devuelven con su número de fila en el archivo y el motivo. Las filas vacías, o con solo fórmulas de total, se ignoran.
+- Los nombres de columna se reconocen en `app/servicios/lote.py` (`COLUMNAS`, `_SIMPLES`, `_IGNORADAS`).
 
 ## Modelo y reglas
 

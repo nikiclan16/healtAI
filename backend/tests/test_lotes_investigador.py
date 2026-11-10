@@ -1,9 +1,10 @@
 import io
+from pathlib import Path
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import text
 
-from app.servicios.lote import COLUMNAS, PLANTILLA
+from app.servicios.lote import COLUMNAS, PLANTILLA, _clasificar
 
 from .conftest import ANEXO_E, PASSWORD, clinical_headers, make_user, scalar
 
@@ -139,12 +140,168 @@ def test_lote_exige_sesion_clinica(client, db):
     assert client.get("/lotes/plantilla").status_code == 401
 
 
-def test_plantilla_descargable_y_valida(client, db):
+def test_plantilla_csv_descargable(client, db):
     h = evaluador(client, db)
     res = client.get("/lotes/plantilla", headers=h)
-    assert res.status_code == 200 and res.text.splitlines()[0] == CABECERA
-    # La plantilla debe poder subirse tal cual.
-    assert subir(client, h, res.content).json()["resumen"]["procesadas"] == 1
+    assert res.status_code == 200 and "text/csv" in res.headers["content-type"]
+    assert res.text.lstrip("﻿").startswith("Sujeto,Nivel_de_Riesgo,Ruta_1,Ruta_2,V1_Edad")
+    # Solo trae la cabecera: subirla tal cual avisa que faltan datos.
+    sin_datos = subir(client, h, res.content)
+    assert sin_datos.status_code == 422 and "filas de datos" in sin_datos.json()["detail"]
+
+
+def test_plantilla_xlsx_descargable(client, db):
+    h = evaluador(client, db)
+    res = client.get("/lotes/plantilla?formato=xlsx", headers=h)
+    assert res.status_code == 200 and "spreadsheetml" in res.headers["content-type"]
+    libro = load_workbook(io.BytesIO(res.content))
+    assert libro.sheetnames == ["Sistematizacion", "Diccionario_Codificacion"]
+    assert client.get("/lotes/plantilla?formato=pdf", headers=h).status_code == 422
+
+
+# ── Formato de sistematización (Formato.xlsx / Formato.csv) ─────────────────────
+
+PLANTILLAS = Path(__file__).resolve().parents[1] / "app" / "plantillas"
+# Anexo E en el formato de sistematización: mismos totales que FILA_ANEXO_E (WHO-5 = 8, DASS D/A/E = 9/8/12).
+ITEMS = {
+    "WHO5 - ": [2, 2, 1, 2, 1],
+    "DASS21 - Dep": [1, 1, 2, 1, 2, 1, 1],  # el último es el ítem 21
+    "DASS21 - Ans": [1, 1, 1, 2, 1, 1, 1],
+    "DASS21 - Est": [2, 2, 2, 2, 1, 2, 1],
+}
+
+
+def cabecera_formato() -> list[str]:
+    return (PLANTILLAS / "Formato_sistematizacion.csv").read_text(encoding="utf-8-sig").splitlines()[0].split(",")
+
+
+def columna(prefijo: str, contiene: str = "") -> str:
+    return next(c for c in cabecera_formato() if c.startswith(prefijo) and contiene in c)
+
+
+def fila_formato(**cambios: str) -> list[str]:
+    """Una fila válida del formato de sistematización; `cambios` sobrescribe por nombre de columna."""
+    cab = cabecera_formato()
+    valores = {c: "" for c in cab}
+    valores.update({
+        "Sujeto": "S01", "Nivel_de_Riesgo": "2", "Ruta_1": "A", "Ruta_2": "B", "V1_Edad": "58", "V2_Sexo": "2",
+        "V3_EstadoCivil": "2", "V4_NivelEducativo": "3", "V5_SituacionLaboral": "1", "V6_Estrato": "3",
+        "V8_TiempoDiagnosticoDM2": "10", "V9_Trat_DietaEjercicio": "0", "V9_Trat_Orales": "1", "V9_Trat_Insulina": "0",
+        "V9_Trat_OralesInsulina": "0", "V9_Trat_Ninguno": "0", "V11_Enf_Ninguna": "0", "V11_Enf_Hipertension": "1",
+        "V11_Enf_Cardiaca": "0", "V11_Enf_Obesidad": "0", "V11_Enf_Otra": "0", "V12_PercepcionSalud": "3",
+        "V13_ApoyoFamiliar": "4", "V14_ActividadFisica": "0", "V15_CalidadSueno": "2",
+    })
+    for prefijo, items in ITEMS.items():
+        for nombre, valor in zip([c for c in cab if c.startswith(prefijo)], items):
+            valores[nombre] = str(valor)
+    valores.update(cambios)
+    return [valores[c] for c in cab]
+
+
+def csv_formato(*filas: list[str], cabecera: list[str] | None = None) -> bytes:
+    return csv_bytes(",".join(cabecera or cabecera_formato()), *(",".join(f) for f in filas))
+
+
+def test_lote_formato_sistematizacion_procesa_y_descarta_columnas_no_clinicas(client, db):
+    h = evaluador(client, db)
+    res = subir(client, h, csv_formato(fila_formato()))
+    assert res.status_code == 200, res.text
+    body = res.json()
+    r = body["resultados"][0]
+    assert r["ok"] and r["fila"] == 2 and r["reglas"] == ["R2", "R4", "R5"] and r["rutaSistema"] == "A"
+    # Lo que se descarta se informa, y no se devuelve el código del sujeto.
+    assert {"Sujeto", "Nivel_de_Riesgo", "Ruta_1", "Ruta_2", "V1_Edad", "V6_Estrato"} <= set(body["columnasIgnoradas"])
+    assert "S01" not in res.text
+    # Mismo resultado que el formato corto con los mismos totales.
+    corto = subir(client, h, csv_bytes(CABECERA, FILA_ANEXO_E)).json()["resultados"][0]
+    assert r["probabilidadRA"] == corto["probabilidadRA"]
+
+
+def test_nivel_de_riesgo_de_amputacion_no_influye_en_el_modelo(client, db):
+    h = evaluador(client, db)
+    res = subir(client, h, csv_formato(fila_formato(Nivel_de_Riesgo="0"), fila_formato(Nivel_de_Riesgo="4")))
+    a, b = res.json()["resultados"]
+    assert a["ok"] and a["probabilidadRA"] == b["probabilidadRA"] and a["shapTop3"] == b["shapTop3"]
+
+
+def test_lote_formato_xlsx_usa_la_hoja_sistematizacion(client, db):
+    h = evaluador(client, db)
+    libro = load_workbook(PLANTILLAS / "Formato_sistematizacion.xlsx")
+    libro["Sistematizacion"].append([int(x) if x.isdigit() else x for x in fila_formato()])
+    buf = io.BytesIO()
+    libro.save(buf)
+    res = client.post(
+        "/lotes",
+        headers=h,
+        files={"archivo": ("lote.xlsx", buf.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["resumen"]["procesadas"] == 1 and res.json()["resultados"][0]["fila"] == 2
+
+
+def test_lote_formato_csv_en_windows_1252(client, db):
+    h = evaluador(client, db)
+    contenido = csv_formato(fila_formato()).decode("utf-8").encode("cp1252")  # como lo guarda Excel en Windows
+    res = subir(client, h, contenido)
+    assert res.status_code == 200 and res.json()["resumen"]["procesadas"] == 1, res.text
+
+
+def test_lote_formato_totales_se_calculan_o_se_verifican(client, db):
+    h = evaluador(client, db)
+    # Total con fórmula sin valor guardado (vacío): se calcula con los ítems.
+    assert subir(client, h, csv_formato(fila_formato(Total_WHO5=""))).json()["resumen"]["procesadas"] == 1
+    # Total digitado que no coincide con los ítems: error claro por fila.
+    malo = subir(client, h, csv_formato(fila_formato(Total_WHO5="9"))).json()["resultados"][0]
+    assert malo["ok"] is False and "Total_WHO5 (9) no coincide con la suma de los ítems (8)" in malo["error"]
+    # Ítems vacíos pero con el total digitado: también se acepta.
+    vacios = {c: "" for c in cabecera_formato() if c.startswith("WHO5 - ")}
+    assert subir(client, h, csv_formato(fila_formato(Total_WHO5="8", **vacios))).json()["resumen"]["procesadas"] == 1
+
+
+def test_lote_formato_item21_vacio_activa_r1(client, db):
+    h = evaluador(client, db)
+    item21 = columna("DASS21 - Dep", "tem 21")
+    r = subir(client, h, csv_formato(fila_formato(**{item21: ""}))).json()["resultados"][0]
+    assert r["ok"] and "R1" in r["reglas"] and r["rutaSistema"] == "A"
+
+
+def test_lote_formato_valida_opciones_de_respuesta_multiple_y_rangos(client, db):
+    h = evaluador(client, db)
+    dos_tratamientos = subir(client, h, csv_formato(fila_formato(V9_Trat_Insulina="1"))).json()["resultados"][0]
+    assert dos_tratamientos["error"] == "V9 (tratamiento): marque exactamente una opción"
+    ninguna_y_otra = subir(client, h, csv_formato(fila_formato(V11_Enf_Ninguna="1"))).json()["resultados"][0]
+    assert "«Ninguna» no puede marcarse junto con otra enfermedad" in ninguna_y_otra["error"]
+    sin_marcar = subir(client, h, csv_formato(fila_formato(V11_Enf_Hipertension="0"))).json()["resultados"][0]
+    assert "marque «Ninguna» o al menos una enfermedad" in sin_marcar["error"]
+    fuera = subir(client, h, csv_formato(fila_formato(**{columna("DASS21 - Ans"): "4"}))).json()["resultados"][0]
+    assert fuera["error"] == "DASS21 ansiedad ítem 2: debe estar entre 0 y 3"
+
+
+def test_lote_formato_ignora_filas_vacias_y_totales_con_formula(client, db):
+    h = evaluador(client, db)
+    cab = cabecera_formato()
+    solo_formulas = ["0" if c.startswith("Total_") or c == "Puntaje_WHO5_Pct" else "" for c in cab]
+    contenido = csv_bytes(",".join(cab), ",".join(fila_formato()), "", ",".join(solo_formulas), ",".join(fila_formato()))
+    body = subir(client, h, contenido).json()
+    # La fila vacía y la que solo trae fórmulas no cuentan, pero los números de fila son los del archivo.
+    assert [r["fila"] for r in body["resultados"]] == [2, 5]
+
+
+def test_lote_formato_rechaza_columnas_desconocidas_y_pide_las_obligatorias(client, db):
+    h = evaluador(client, db)
+    res = subir(client, h, csv_formato(fila_formato() + ["123"], cabecera=cabecera_formato() + ["Cedula"]))
+    assert res.status_code == 422 and "Cedula" in res.json()["detail"]
+    cab = [c for c in cabecera_formato() if not c.startswith("WHO5 - ") and c != "Total_WHO5"]
+    faltan = subir(client, h, csv_bytes(",".join(cab), "1"))
+    assert faltan.status_code == 422 and "WHO-5" in faltan.json()["detail"]
+
+
+def test_encabezados_con_codificacion_danada_se_reconocen():
+    assert _clasificar("WHO5 - �tem 1: Me he sentido alegre") == "who5_i1"
+    assert _clasificar("DASS21 - Depresi�n - �tem 21: Sent� que la vida") == "dass_item21"
+    assert _clasificar("DASS21 - Estr�s - �tem 18: He tendido") == "est_i18"
+    assert _clasificar("DASS21 - Depresión - Ítem 4: no existe") is None
+    assert _clasificar("Nivel de Riesgo") == "~ignorada"
 
 
 # ── Panel del investigador ──────────────────────────────────────────────────────

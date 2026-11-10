@@ -119,6 +119,8 @@ export interface BatchResult {
   /** Huella SHA-256 del archivo recibido (integridad). */
   sha256: string
   columnas: string[]
+  /** Columnas reconocidas pero que no se usan (código del sujeto, nivel de riesgo, sociodemográficas…). */
+  columnasIgnoradas?: string[]
   resumen: {
     filas: number
     procesadas: number

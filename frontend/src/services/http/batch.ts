@@ -6,5 +6,5 @@ export const httpBatchService: BatchService = {
   async upload(file) {
     return (await httpUpload('/lotes', file)) as BatchResult
   },
-  template: () => httpDownload('/lotes/plantilla', 'plantilla_lote.csv'),
+  template: (format) => httpDownload(`/lotes/plantilla?formato=${format}`, `Formato_sistematizacion.${format}`),
 }
