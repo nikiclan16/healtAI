@@ -1,5 +1,6 @@
 import logging
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import HTTPException
 
@@ -34,3 +35,29 @@ def get_modelo() -> ComponenteEstratificacionSaludMental:
     if componente is None:
         raise HTTPException(503, f"Modelo no disponible: {motivo}")
     return componente
+
+
+@lru_cache
+def cargar_generico() -> ComponenteEstratificacionSaludMental | None:
+    """Modelo de prueba (`model.placeholder.json`, junto al artefacto real) para la respuesta genérica."""
+    ruta = Path(get_settings().model_artifact_path).with_name("model.placeholder.json")
+    try:
+        return ComponenteEstratificacionSaludMental(cargar_artefacto(str(ruta), permitir_placeholder=True))
+    except ModeloNoDisponible as exc:
+        log.error("Modelo de prueba no disponible: %s", exc)
+        return None
+
+
+def get_modelo_o_generico() -> ComponenteEstratificacionSaludMental:
+    """Para `/predecir` y `/lotes`, que solo calculan y no guardan nada.
+
+    Con el modelo real usa el real. Sin él responde con el modelo de prueba, y la respuesta lo declara
+    (`modeloPlaceholder: true`) para que la interfaz muestre «MODELO DE PRUEBA». `/evaluaciones`, que sí
+    registra al paciente, sigue exigiendo el modelo real (`get_modelo`)."""
+    componente, _ = cargar()
+    if componente is not None:
+        return componente
+    generico = cargar_generico()
+    if generico is None:
+        raise HTTPException(503, "Modelo no disponible")
+    return generico

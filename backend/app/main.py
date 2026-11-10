@@ -11,6 +11,7 @@ from .bootstrap import ensure_admin
 from .config import get_settings
 from .db import get_db
 from .modelo.registro import cargar as cargar_modelo
+from .modelo.registro import cargar_generico
 from .routers import admin, auth, evaluaciones, investigador, lotes
 
 
@@ -65,4 +66,6 @@ def salud(db: Session = Depends(get_db)):
         "version_app": APP_VERSION,
         "version_modelo": info.get("version"),
         "modelo": info,
+        # Qué responden /predecir y /lotes: el modelo real, o el de prueba mientras no esté instalado.
+        "inferencia": "modelo" if modelo else ("generica" if cargar_generico() else "no_disponible"),
     }

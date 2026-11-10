@@ -65,6 +65,7 @@ Al arrancar, si no existe ningún administrador activo, se crea uno con `ADMIN_E
 ## Modelo y reglas
 
 - El backend **no trae el modelo entrenado**: lo lee de `model_artifacts/model.json` (pesos, intercepto y escalador; ver [`model_artifacts/README.md`](model_artifacts/README.md)). **Sin un artefacto válido, `/predecir` y `/evaluaciones` responden 503** y `/salud` informa `status: "degradado"`; nunca se inventa una predicción.
+- **Respuesta genérica:** `/predecir` y `/lotes` (que solo calculan y no guardan nada) responden con el modelo de prueba mientras no haya `model.json`, marcados con `modeloPlaceholder: true`; `/salud` lo informa en `inferencia: "generica"` y la pantalla muestra «MODELO DE PRUEBA». `/evaluaciones`, que registra al paciente, sigue respondiendo 503 sin el modelo real.
 - `model_artifacts/model.placeholder.json` son valores de ejemplo para desarrollo. Solo se carga con `ALLOW_PLACEHOLDER_MODEL=true`, y toda respuesta lo marca (`modeloPlaceholder`), por lo que el frontend muestra el aviso "MODELO DE PRUEBA". **No activar en producción.**
 - `app/modelo/component.py` adapta la clase `ComponenteEstratificacionSaludMental` del equipo del modelo (corrige `__init__`, usa variables por nombre y añade SHAP lineal). Su capa de reglas se sacó a `app/reglas/motor_reglas.py` (RNF04.3) con los umbrales del mockup.
 - El contrato del formulario (`app/schemas_clinicos.py`) rechaza con 422 cualquier campo no definido: el nivel de riesgo de amputación o un identificador de paciente no pueden entrar.

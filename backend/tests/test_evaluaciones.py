@@ -36,7 +36,7 @@ def test_predecir_exige_sesion_clinica(client, admin_headers):
     assert client.post("/predecir", json=ANEXO_E, headers=admin_headers).status_code == 401
 
 
-def test_sin_modelo_responde_503_y_no_inventa_nada(client, db):
+def test_sin_modelo_real_no_se_registra_ninguna_evaluacion(client, db):
     from fastapi import HTTPException
 
     def sin_modelo():
@@ -45,11 +45,33 @@ def test_sin_modelo_responde_503_y_no_inventa_nada(client, db):
     h = con_evaluador(client, db)
     app.dependency_overrides[get_modelo] = sin_modelo
     try:
-        assert client.post("/predecir", json=ANEXO_E, headers=h).status_code == 503
         assert crear(client, h).status_code == 503
     finally:
         app.dependency_overrides.pop(get_modelo, None)
     assert scalar(db, "SELECT count(*) FROM evaluations") == 0
+
+
+def test_sin_modelo_real_predecir_y_lotes_responden_con_el_modelo_de_prueba(client, db, monkeypatch):
+    """Respuesta genérica: /predecir y /lotes siguen respondiendo (marcados como prueba); /evaluaciones no."""
+    from app.modelo import registro
+
+    monkeypatch.setattr(registro, "cargar", lambda: (None, "No existe el artefacto del modelo"))
+    h = con_evaluador(client, db)
+    res = client.post("/predecir", json=ANEXO_E, headers=h)
+    assert res.status_code == 200 and res.json()["modeloPlaceholder"] is True and len(res.json()["shapTop3"]) == 3
+    lote = client.post("/lotes", headers=h, files={"archivo": ("l.csv", b"v8_tiempo_diagnostico\n1\n", "text/csv")})
+    assert lote.status_code == 422  # llega a validar el archivo (no es el 503 del modelo)
+    assert crear(client, h).status_code == 503
+    assert scalar(db, "SELECT count(*) FROM evaluations") == 0
+
+
+def test_salud_informa_que_la_inferencia_es_generica_sin_modelo_real(client, monkeypatch):
+    import app.main as main
+
+    assert client.get("/salud").json()["inferencia"] == "modelo"
+    monkeypatch.setattr(main, "cargar_modelo", lambda: (None, "No existe el artefacto del modelo"))
+    cuerpo = client.get("/salud").json()
+    assert cuerpo["status"] == "degradado" and cuerpo["inferencia"] == "generica"
 
 
 # ── Contrato de datos (HTTP 422) ────────────────────────────────────────────────

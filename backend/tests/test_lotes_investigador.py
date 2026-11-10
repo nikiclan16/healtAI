@@ -145,9 +145,20 @@ def test_plantilla_csv_descargable(client, db):
     res = client.get("/lotes/plantilla", headers=h)
     assert res.status_code == 200 and "text/csv" in res.headers["content-type"]
     assert res.text.lstrip("﻿").startswith("Sujeto,Nivel_de_Riesgo,Ruta_1,Ruta_2,V1_Edad")
-    # Solo trae la cabecera: subirla tal cual avisa que faltan datos.
+    # Solo trae la cabecera: el formato se verifica y se avisa que no hay filas que procesar.
     sin_datos = subir(client, h, res.content)
-    assert sin_datos.status_code == 422 and "filas de datos" in sin_datos.json()["detail"]
+    assert sin_datos.status_code == 200, sin_datos.text
+    cuerpo = sin_datos.json()
+    assert cuerpo["resumen"]["filas"] == 0 and "no trae filas de datos" in cuerpo["aviso"]
+    assert "Sujeto" in cuerpo["columnasIgnoradas"] and "V8_TiempoDiagnosticoDM2" in cuerpo["columnas"]
+
+
+def test_formatos_oficiales_en_blanco_se_aceptan_en_csv_y_xlsx(client, db):
+    h = evaluador(client, db)
+    for formato, nombre in (("csv", "Formato.csv"), ("xlsx", "Formato.xlsx")):
+        archivo = client.get(f"/lotes/plantilla?formato={formato}", headers=h).content
+        res = subir(client, h, archivo, nombre)
+        assert res.status_code == 200 and res.json()["resumen"]["filas"] == 0, (formato, res.text)
 
 
 def test_plantilla_xlsx_descargable(client, db):

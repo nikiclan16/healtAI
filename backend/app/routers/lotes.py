@@ -8,7 +8,7 @@ from .. import audit
 from ..db import get_db
 from ..deps import current_clinical
 from ..modelo.component import ComponenteEstratificacionSaludMental
-from ..modelo.registro import get_modelo
+from ..modelo.registro import get_modelo_o_generico
 from ..servicios import lote
 
 router = APIRouter(prefix="/lotes", tags=["lotes"])
@@ -35,10 +35,12 @@ def plantilla(formato: Literal["csv", "xlsx"] = "csv", _user: dict = Depends(cur
 def procesar_lote(
     archivo: UploadFile = File(...),
     user: dict = Depends(current_clinical),
-    modelo: ComponenteEstratificacionSaludMental = Depends(get_modelo),
+    modelo: ComponenteEstratificacionSaludMental = Depends(get_modelo_o_generico),
     db: Session = Depends(get_db),
 ):
     """RF03.2 — inferencia y reglas por lote (CSV/XLSX). Solo calcula: no crea evaluaciones ni decisiones.
+
+    Sin modelo real instalado responde con el modelo de prueba (`modeloPlaceholder: true`).
 
     Se registra en la bitácora quién lo procesó, con la huella SHA-256 del archivo (integridad)."""
     contenido = archivo.file.read(lote.MAX_BYTES + 1)

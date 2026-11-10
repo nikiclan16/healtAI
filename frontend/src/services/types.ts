@@ -67,6 +67,8 @@ export interface HealthStatus {
   ok: boolean
   versionModelo?: string
   detalle?: string
+  /** Sin modelo real instalado, la API responde con el modelo de prueba (respuesta genérica, no clínica). */
+  generica?: boolean
 }
 
 export type DecisionAction = 'confirmar' | 'rechazar' | 'ajustar'
@@ -133,6 +135,8 @@ export interface BatchResult {
   }
   versiones: { app: string; modelo: string; diccionario: string }
   modeloPlaceholder: boolean
+  /** Presente cuando no hay nada que procesar (p. ej. el formato en blanco). */
+  aviso?: string | null
   resultados: BatchRow[]
 }
 

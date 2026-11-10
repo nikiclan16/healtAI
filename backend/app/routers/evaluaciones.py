@@ -10,7 +10,7 @@ from .. import audit
 from ..db import get_db
 from ..deps import current_clinical, current_evaluator
 from ..modelo.component import ComponenteEstratificacionSaludMental
-from ..modelo.registro import get_modelo
+from ..modelo.registro import get_modelo, get_modelo_o_generico
 from ..schemas_clinicos import DecisionIn, ScreeningFormIn
 from ..servicios import evaluacion as svc
 
@@ -21,9 +21,11 @@ router = APIRouter(tags=["evaluaciones"])
 def predecir(
     form: ScreeningFormIn,
     _user: dict = Depends(current_clinical),
-    modelo: ComponenteEstratificacionSaludMental = Depends(get_modelo),
+    modelo: ComponenteEstratificacionSaludMental = Depends(get_modelo_o_generico),
 ):
-    """RF03.1 — inferencia pura: probabilidad, ruta base y Top 3 SHAP. No aplica reglas ni guarda nada."""
+    """RF03.1 — inferencia pura: probabilidad, ruta base y Top 3 SHAP. No aplica reglas ni guarda nada.
+
+    Sin modelo real instalado responde con el modelo de prueba (`modeloPlaceholder: true`)."""
     prediccion, _ = svc.predecir(modelo, form)
     return prediccion
 

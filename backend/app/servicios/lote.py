@@ -406,8 +406,6 @@ def leer_tabla(nombre: str, contenido: bytes) -> Tabla:
     # Los totales con fórmula del formato de sistematización no cuentan para saber si una fila está vacía.
     derivadas = {_DERIVADA} | ({"who5_total", "dass_depresion", "dass_ansiedad", "dass_estres"} if "who5_i1" in claves else set())
     cuerpo = [(n, r) for n, r in cuerpo if any(_texto(c) for c, k in zip(r, claves) if k not in derivadas)]
-    if not cuerpo:
-        raise HTTPException(422, "El archivo no tiene filas de datos debajo de la cabecera")
     if len(cuerpo) > MAX_FILAS:
         raise HTTPException(413, f"El archivo supera el máximo de {MAX_FILAS} filas por lote")
 
@@ -467,5 +465,7 @@ def procesar(modelo: ComponenteEstratificacionSaludMental, nombre: str, contenid
             "diccionario": get_settings().dictionary_version,
         },
         "modeloPlaceholder": modelo.artefacto.placeholder,
+        # El formato en blanco (solo cabecera) es válido: se verifica y se avisa que no hay nada que procesar.
+        "aviso": None if resultados else "El formato es correcto, pero el archivo no trae filas de datos para procesar.",
         "resultados": resultados,
     }

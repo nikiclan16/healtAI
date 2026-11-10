@@ -73,6 +73,8 @@ function RealTimeCard() {
         </div>
         {health === null ? (
           <span className="font-mono text-[11px] text-slate-500">Verificando…</span>
+        ) : health.generica ? (
+          <span title={health.detalle} className="rounded border border-amber-200 bg-amber-50 px-2 py-0.5 font-mono text-[11px] text-amber-700">● 200 OK · genérica</span>
         ) : health.ok ? (
           <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] text-emerald-600">● 200 OK</span>
         ) : (
@@ -228,6 +230,9 @@ function BatchResultCard({ result }: { result: BatchResult }) {
 
   return (
     <Card title="Procesamiento por Lotes Exitoso" className="md:col-span-2">
+      {result.aviso && (
+        <p role="status" className="mb-3 rounded-lg bg-blue-50 p-3 text-xs font-semibold text-cuc-blue">{result.aviso}</p>
+      )}
       {result.modeloPlaceholder && (
         <p role="alert" className="mb-3 rounded-lg bg-amber-50 p-3 text-xs font-semibold text-amber-800">
           MODELO DE PRUEBA: estos resultados no son clínicos.
